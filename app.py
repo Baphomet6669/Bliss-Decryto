@@ -34,10 +34,10 @@ body{background:radial-gradient(ellipse at 50% 65%,#4d1010 0,#17090d 34%,#07080c
 .brand span{color:var(--red)}
 .status{font-size:11px;letter-spacing:.18em;color:#ff8d95;border:1px solid #8f2733;padding:9px 13px;background:#1a080bbd}
 .status i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff273d;box-shadow:0 0 12px #ff273d;margin-right:8px}
-.stage{position:absolute;inset:75px 0 100px;display:flex;align-items:center;justify-content:center;perspective:1000px}
+.stage{position:absolute;inset:65px 0 92px;display:flex;align-items:center;justify-content:center}
 .floor{position:absolute;bottom:0;width:min(900px,95vw);height:150px;background:radial-gradient(ellipse,rgba(255,52,20,.34),transparent 67%);border-radius:50%;transform:rotateX(65deg)}
-#ultronCanvas{width:100%;height:100%;display:block;z-index:2}
-.caption{position:absolute;bottom:12px;text-align:center;letter-spacing:.28em;font-size:11px;color:#c6c8ce;text-shadow:0 0 12px #f22;z-index:3}
+#glCanvas{width:100%;height:100%;display:block;z-index:2;touch-action:none}
+.caption{position:absolute;bottom:8px;text-align:center;letter-spacing:.28em;font-size:11px;color:#c6c8ce;text-shadow:0 0 12px #f22;z-index:3;pointer-events:none}
 .controls{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(720px,94vw);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;z-index:5}
 button{border:1px solid #76303a;background:rgba(15,10,15,.88);color:#f5f5f7;padding:12px 17px;letter-spacing:.12em;font-size:10px;font-weight:700;cursor:pointer;transition:.2s}
 button:hover,button:focus{border-color:#ff3448;box-shadow:0 0 18px #ff263844;outline:none}
@@ -45,14 +45,14 @@ button.primary{background:linear-gradient(135deg,#a50c20,#4d0913);border-color:#
 button.active{background:#64101c;border-color:#ff3348}
 .zoom{display:flex;align-items:center;gap:9px;border:1px solid #59212a;background:#100b10;padding:8px 12px;color:#bbb;font-size:10px}
 input[type=range]{width:95px;accent-color:#ff2638}
-.console{position:absolute;left:24px;bottom:115px;width:230px;color:#d6a4a8;font:10px/1.8 monospace;letter-spacing:.05em;opacity:.85;z-index:3}
+.console{position:absolute;left:24px;bottom:115px;width:230px;color:#d6a4a8;font:10px/1.8 monospace;letter-spacing:.05em;opacity:.85;z-index:3;pointer-events:none}
 .console strong{color:#ff5261}
-.mic-state{position:absolute;right:24px;bottom:115px;text-align:right;font:10px/1.8 monospace;color:#c7c7cc;z-index:3}
+.mic-state{position:absolute;right:24px;bottom:115px;text-align:right;font:10px/1.8 monospace;color:#c7c7cc;z-index:3;pointer-events:none}
 .mic-state strong{color:#ff5261}
 .chat{position:absolute;top:82px;right:22px;width:min(280px,42vw);padding:13px;background:rgba(5,7,11,.62);border:1px solid #57232c;backdrop-filter:blur(8px);font-size:12px;z-index:4}
 .chat small{display:block;color:#ff6876;letter-spacing:.18em;margin-bottom:7px}
 #reply{color:#eee;min-height:30px;line-height:1.5}
-@media(max-width:650px){.topbar{padding:16px}.stage{inset:70px 0 145px}.chat{top:68px;right:10px;width:155px;font-size:10px}.console{left:12px;bottom:142px;width:150px;font-size:8px}.mic-state{right:12px;bottom:142px;font-size:8px}.controls{bottom:13px;gap:6px}button{padding:11px 12px;font-size:9px}.zoom{padding:7px}.caption{bottom:5px}}
+@media(max-width:650px){.topbar{padding:16px}.stage{inset:65px 0 138px}.chat{top:68px;right:10px;width:155px;font-size:10px}.console{left:12px;bottom:142px;width:150px;font-size:8px}.mic-state{right:12px;bottom:142px;font-size:8px}.controls{bottom:13px;gap:6px}button{padding:11px 12px;font-size:9px}.zoom{padding:7px}.caption{bottom:4px;font-size:9px}}
 </style>
 </head>
 <body>
@@ -62,7 +62,7 @@ input[type=range]{width:95px;accent-color:#ff2638}
  <div class="chat"><small>ULTRON // RESPONSE</small><div id="reply">Awaiting your command, Shivam Sir.</div></div>
  <main class="stage">
   <div class="floor"></div>
-  <canvas id="ultronCanvas"></canvas>
+  <canvas id="glCanvas"></canvas>
   <div class="caption">ARTIFICIAL INTELLIGENCE // SUPERIOR MACHINE INTELLIGENCE</div>
  </main>
  <div class="console">CORE STATUS: <strong>STABLE</strong><br>THREAT LEVEL: <strong>MAXIMUM</strong><br>LANGUAGE: <strong>EN / HI</strong></div>
@@ -75,14 +75,376 @@ input[type=range]{width:95px;accent-color:#ff2638}
   <button id="resetBtn">RESET VIEW</button>
  </nav>
 </div>
+
+<script id="vs" type="x-shader/x-vertex">
+attribute vec2 aPos;
+void main(){
+  gl_Position = vec4(aPos, 0.0, 1.0);
+}
+</script>
+
+<script id="fs" type="x-shader/x-fragment">
+precision highp float;
+
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uZoom;
+uniform float uSit;
+uniform float uTalk;
+uniform vec2 uLook;
+
+mat2 rot(float a){
+  float c = cos(a), s = sin(a);
+  return mat2(c, -s, s, c);
+}
+
+float smin(float a, float b, float k){
+  float h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
+  return mix(b, a, h) - k*h*(1.0 - h);
+}
+
+float smax(float a, float b, float k){
+  return -smin(-a, -b, k);
+}
+
+float sdSphere(vec3 p, float r){
+  return length(p) - r;
+}
+
+float sdEllipsoid(vec3 p, vec3 r){
+  float k0 = length(p/r);
+  float k1 = length(p/(r*r));
+  return k0*(k0 - 1.0)/k1;
+}
+
+float sdCapsule(vec3 p, vec3 a, vec3 b, float r1, float r2){
+  vec3 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba)/dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba*h) - mix(r1, r2, h);
+}
+
+float sdRoundBox(vec3 p, vec3 b, float r){
+  vec3 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
+}
+
+// Returns vec2(distance, materialID)
+// 1.0 = brushed titanium armor, 2.0 = dark carbon inner skeleton, 3.0 = glowing crimson plasma
+vec2 mapScene(vec3 p){
+  float breath = sin(uTime * 2.1) * 0.015;
+  p.y -= breath;
+
+  // Subtle torso turn following gaze
+  vec3 bp = p;
+  bp.xz *= rot(uLook.x * 0.22);
+  bp.yz *= rot(uLook.y * 0.10);
+
+  // ---------------- HEAD (Sculpted Age of Ultron Prime Skull) ----------------
+  vec3 hp = bp - vec3(0.0, 0.86, 0.05);
+  hp.xz *= rot(uLook.x * 0.58);
+  hp.yz *= rot(uLook.y * 0.38);
+
+  // Cranium dome
+  float skull = sdEllipsoid(hp - vec3(0.0, 0.06, -0.03), vec3(0.24, 0.30, 0.28));
+  // Temple & ear audio pods
+  vec3 ehp = vec3(abs(hp.x), hp.y, hp.z);
+  float earPod = sdCapsule(ehp, vec3(0.21, -0.02, -0.03), vec3(0.24, 0.05, -0.05), 0.055, 0.045);
+  skull = smin(skull, earPod, 0.02);
+
+  // Iconic central forehead crest & brow plates
+  float crest = sdCapsule(hp, vec3(0.0, 0.34, 0.02), vec3(0.0, 0.06, 0.255), 0.022, 0.036);
+  vec3 browP = ehp - vec3(0.11, 0.08, 0.20);
+  browP.xy *= rot(-0.28);
+  browP.xz *= rot(0.32);
+  float brow = sdRoundBox(browP, vec3(0.11, 0.036, 0.07), 0.018);
+
+  // Sculpted angular cheekbones
+  vec3 cheekP = ehp - vec3(0.145, -0.05, 0.14);
+  cheekP.xy *= rot(0.35);
+  cheekP.xz *= rot(0.45);
+  float cheek = sdRoundBox(cheekP, vec3(0.085, 0.075, 0.09), 0.025);
+
+  // Sharp nasal bridge
+  vec3 noseP = hp - vec3(0.0, -0.015, 0.245);
+  noseP.yz *= rot(-0.18);
+  float nose = sdRoundBox(noseP, vec3(0.024, 0.062, 0.032), 0.012);
+
+  // Animated Lower Jaw & Chin
+  float jawDrop = uTalk * 0.038;
+  vec3 jawP = hp - vec3(0.0, -0.175 - jawDrop, 0.11);
+  jawP.yz *= rot(0.12 + uTalk * 0.12);
+  float jaw = sdRoundBox(jawP, vec3(0.125, 0.082, 0.12), 0.035);
+  float chin = sdRoundBox(jawP - vec3(0.0, -0.055, 0.055), vec3(0.068, 0.032, 0.065), 0.016);
+  jaw = smin(jaw, chin, 0.02);
+
+  float headArmor = smin(skull, brow, 0.018);
+  headArmor = smin(headArmor, crest, 0.015);
+  headArmor = smin(headArmor, cheek, 0.022);
+  headArmor = smin(headArmor, nose, 0.012);
+  headArmor = smin(headArmor, jaw, 0.025);
+
+  // Carve deep menacing eye sockets
+  vec3 sockP = ehp - vec3(0.105, 0.032, 0.225);
+  sockP.xy *= rot(-0.24);
+  sockP.xz *= rot(0.28);
+  float socket = sdRoundBox(sockP, vec3(0.078, 0.028, 0.065), 0.012);
+  headArmor = smax(headArmor, -socket, 0.012);
+
+  // Carve cheek vents & mouth cavity
+  vec3 ventP = ehp - vec3(0.165, -0.065, 0.14);
+  ventP.xz *= rot(0.5);
+  float cheekVent = sdRoundBox(ventP, vec3(0.045, 0.032, 0.05), 0.008);
+  headArmor = smax(headArmor, -cheekVent, 0.008);
+
+  vec3 mouthCavP = jawP - vec3(0.0, 0.018, 0.095);
+  float mouthCav = sdRoundBox(mouthCavP, vec3(0.078, 0.036 + jawDrop*0.5, 0.055), 0.01);
+  headArmor = smax(headArmor, -mouthCav, 0.008);
+
+  // Vertical titanium teeth / grille bars over mouth cavity
+  float gx = abs(fract((hp.x + 0.016) / 0.032) - 0.5) * 0.032;
+  float grilleBars = max(abs(hp.x) - 0.075, max(gx - 0.0045, length(jawP.yz - vec2(0.018, 0.118)) - 0.032));
+  headArmor = min(headArmor, grilleBars);
+
+  // Glowing Red Predator Eyes
+  vec3 eyeP = ehp - vec3(0.105, 0.030, 0.205);
+  eyeP.xy *= rot(-0.25);
+  eyeP.xz *= rot(0.28);
+  float eyes = sdRoundBox(eyeP, vec3(0.064, 0.014, 0.032), 0.006);
+
+  // Internal Mouth Furnace Glow & Temple Glow
+  float mouthGlow = sdRoundBox(jawP - vec3(0.0, 0.018, 0.078), vec3(0.068, 0.026 + jawDrop*0.45, 0.032), 0.008);
+  float earGlow = sdRoundBox(ehp - vec3(0.238, 0.015, -0.035), vec3(0.012, 0.028, 0.012), 0.004);
+  float glow = min(eyes, min(mouthGlow, earGlow));
+
+  // Dark inner cranium backing
+  float headInner = sdEllipsoid(hp - vec3(0.0, 0.02, 0.01), vec3(0.21, 0.25, 0.23));
+
+  // ---------------- NECK & HYDRAULICS ----------------
+  vec3 ebp = vec3(abs(bp.x), bp.y, bp.z);
+  float neckCore = sdCapsule(bp, vec3(0.0, 0.48, -0.02), vec3(0.0, 0.72, 0.02), 0.115, 0.095);
+  float piston1 = sdCapsule(ebp, vec3(0.075, 0.46, 0.03), vec3(0.055, 0.70, 0.05), 0.024, 0.020);
+  float piston2 = sdCapsule(ebp, vec3(0.105, 0.46, -0.04), vec3(0.075, 0.69, -0.02), 0.022, 0.018);
+  float collar = sdCapsule(ebp, vec3(0.0, 0.44, 0.08), vec3(0.22, 0.52, -0.02), 0.045, 0.038);
+
+  // ---------------- TORSO, PECTORALS & ARC REACTOR ----------------
+  float chestCore = sdEllipsoid(bp - vec3(0.0, 0.24, 0.0), vec3(0.32, 0.26, 0.21));
+  float absCore = sdCapsule(bp, vec3(0.0, -0.18, 0.01), vec3(0.0, 0.16, 0.03), 0.175, 0.235);
+  float torsoInner = smin(chestCore, absCore, 0.06);
+
+  // Sculpted Pectoral Armor Plates
+  vec3 pecP = ebp - vec3(0.165, 0.29, 0.145);
+  pecP.xy *= rot(-0.14);
+  pecP.xz *= rot(0.34);
+  pecP.yz *= rot(-0.16);
+  float pec = sdRoundBox(pecP, vec3(0.135, 0.105, 0.065), 0.028);
+
+  // Ribbed Abdominal Armor Plates (4 stacked segments)
+  float ribs = 1e5;
+  for(int i = 0; i < 4; i++){
+    float fi = float(i);
+    float ry = 0.11 - fi * 0.078;
+    float rw = 0.145 - fi * 0.012;
+    vec3 ribP = ebp - vec3(rw * 0.65, ry, 0.155 - fi * 0.008);
+    ribP.xy *= rot(-0.12);
+    ribP.xz *= rot(0.35);
+    float seg = sdRoundBox(ribP, vec3(rw * 0.62, 0.026, 0.048), 0.012);
+    ribs = min(ribs, seg);
+  }
+
+  // Glowing Arc Reactor Chest Core
+  float chestGlow = sdCapsule(bp, vec3(0.0, 0.17, 0.215), vec3(0.0, 0.33, 0.225), 0.018, 0.026);
+  glow = min(glow, chestGlow);
+
+  // ---------------- LAYERED SHOULDER PAULDRONS ----------------
+  vec3 shP = ebp - vec3(0.37, 0.35, -0.01);
+  shP.xy *= rot(-0.42);
+  float pauldron1 = sdEllipsoid(shP, vec3(0.17, 0.13, 0.16));
+  float pauldron2 = sdEllipsoid(shP - vec3(0.04, -0.07, 0.01), vec3(0.14, 0.10, 0.14));
+  float pauldrons = smin(pauldron1, pauldron2, 0.025);
+  float shGlow = sdRoundBox(shP - vec3(0.05, 0.01, 0.135), vec3(0.045, 0.012, 0.015), 0.004);
+  glow = min(glow, shGlow);
+
+  // ---------------- ARMS, GAUNTLETS & CLAWS ----------------
+  vec3 shJoint = vec3(0.42, 0.27, 0.0);
+  vec3 elJoint = vec3(0.49, -0.02, 0.04);
+  vec3 wrJoint = vec3(0.52, -0.32, 0.12);
+
+  float upperArmInner = sdCapsule(ebp, shJoint, elJoint, 0.082, 0.068);
+  float upperArmArmor = sdCapsule(ebp, shJoint + vec3(0.02, -0.02, 0.01), elJoint + vec3(0.01, 0.03, 0.01), 0.095, 0.078);
+  float forearm = sdCapsule(ebp, elJoint, wrJoint, 0.086, 0.064);
+  float armGlow = sdCapsule(ebp, elJoint + vec3(0.04, -0.07, 0.065), wrJoint + vec3(0.03, 0.06, 0.055), 0.008, 0.006);
+  glow = min(glow, armGlow);
+
+  // Hand & Articulated Claws
+  float hand = sdRoundBox(ebp - (wrJoint + vec3(0.0, -0.05, 0.02)), vec3(0.042, 0.055, 0.055), 0.018);
+  float claws = 1e5;
+  for(int f = -1; f <= 1; f++){
+    float ff = float(f);
+    vec3 cStart = wrJoint + vec3(-0.01, -0.10, 0.02 + ff * 0.028);
+    vec3 cEnd = cStart + vec3(-0.025, -0.085, 0.01);
+    claws = min(claws, sdCapsule(ebp, cStart, cEnd, 0.013, 0.005));
+  }
+
+  // ---------------- PELVIS & HEAVY ARMORED LEGS ----------------
+  float pelvis = sdRoundBox(bp - vec3(0.0, -0.25, 0.02), vec3(0.185, 0.075, 0.135), 0.035);
+  vec3 hipJ = vec3(0.145, -0.29, 0.01);
+  vec3 kneeJ = vec3(0.175, -0.66, 0.04);
+  vec3 ankleJ = vec3(0.19, -1.04, 0.0);
+
+  float thigh = sdCapsule(ebp, hipJ, kneeJ, 0.112, 0.086);
+  float kneeGuard = sdRoundBox(ebp - (kneeJ + vec3(0.0, 0.0, 0.075)), vec3(0.062, 0.058, 0.042), 0.018);
+  float shin = sdCapsule(ebp, kneeJ, ankleJ, 0.092, 0.068);
+  float legGlow = sdCapsule(ebp, kneeJ + vec3(0.02, -0.08, 0.082), ankleJ + vec3(0.02, 0.10, 0.065), 0.008, 0.006);
+  glow = min(glow, legGlow);
+
+  float foot = sdRoundBox(ebp - vec3(0.19, -1.09, 0.07), vec3(0.078, 0.042, 0.145), 0.02);
+
+  // Combine Titanium Armor (ID 1.0)
+  float armor = headArmor;
+  armor = min(armor, piston1);
+  armor = min(armor, collar);
+  armor = min(armor, pec);
+  armor = min(armor, ribs);
+  armor = min(armor, pauldrons);
+  armor = min(armor, upperArmArmor);
+  armor = min(armor, forearm);
+  armor = min(armor, hand);
+  armor = min(armor, claws);
+  armor = min(armor, pelvis);
+  armor = min(armor, thigh);
+  armor = min(armor, kneeGuard);
+  armor = min(armor, shin);
+  armor = min(armor, foot);
+
+  // Combine Dark Inner Frame (ID 2.0)
+  float dark = headInner;
+  dark = min(dark, neckCore);
+  dark = min(dark, piston2);
+  dark = min(dark, torsoInner);
+  dark = min(dark, upperArmInner);
+
+  vec2 res = vec2(armor, 1.0);
+  if(dark < res.x) res = vec2(dark, 2.0);
+  if(glow < res.x) res = vec2(glow, 3.0);
+  return res;
+}
+
+vec3 calcNormal(vec3 p){
+  vec2 e = vec2(0.0018, -0.0018);
+  return normalize(
+    e.xyy * mapScene(p + e.xyy).x +
+    e.yyx * mapScene(p + e.yyx).x +
+    e.yxy * mapScene(p + e.yxy).x +
+    e.xxx * mapScene(p + e.xxx).x
+  );
+}
+
+// Procedural studio + fiery apocalyptic reflection environment
+vec3 envReflection(vec3 r){
+  float sky = clamp(r.y * 0.5 + 0.5, 0.0, 1.0);
+  vec3 coldKey = vec3(0.75, 0.84, 0.96) * pow(max(0.0, dot(r, normalize(vec3(-0.5, 0.7, 0.5)))), 6.0);
+  vec3 topStrip = vec3(0.95, 0.98, 1.0) * smoothstep(0.65, 0.96, r.y) * 0.9;
+  vec3 fireBounce = vec3(1.0, 0.16, 0.06) * pow(clamp(-r.y + 0.25, 0.0, 1.0), 2.2) * 0.85;
+  vec3 rimRed = vec3(0.95, 0.08, 0.14) * pow(max(0.0, dot(r, normalize(vec3(0.6, 0.1, -0.8)))), 4.0) * 0.95;
+  return mix(vec3(0.04, 0.05, 0.07), vec3(0.18, 0.22, 0.28), sky) + coldKey + topStrip + fireBounce + rimRed;
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes.xy) / uRes.y;
+
+  // Camera framing: Full body Stand Mode vs Menacing Close-Up Sit Mode
+  vec3 standCam = vec3(0.0, -0.08, 2.65 / uZoom);
+  vec3 sitCam   = vec3(0.0, 0.76, 1.18 / uZoom);
+  vec3 ro = mix(standCam, sitCam, uSit);
+
+  vec3 target = mix(vec3(0.0, -0.08, 0.0), vec3(0.0, 0.78, 0.05), uSit);
+  vec3 fwd = normalize(target - ro);
+  vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), fwd));
+  vec3 up = cross(fwd, right);
+  vec3 rd = normalize(fwd + uv.x * right + uv.y * up);
+
+  float t = 0.0;
+  float hitMat = 0.0;
+  float minGlowDist = 100.0;
+
+  for(int i = 0; i < 88; i++){
+    vec3 p = ro + rd * t;
+    vec2 h = mapScene(p);
+    // Track closest approach to red plasma cores for volumetric bloom
+    float gDist = mapScene(p).y == 3.0 ? h.x : 1.0;
+    minGlowDist = min(minGlowDist, max(0.002, h.x + (h.y == 3.0 ? 0.0 : 0.06)));
+
+    if(h.x < 0.0018){
+      hitMat = h.y;
+      break;
+    }
+    if(t > 5.5) break;
+    t += h.x * 0.88;
+  }
+
+  vec3 col = vec3(0.0);
+  float alpha = 0.0;
+
+  if(hitMat > 0.5){
+    vec3 p = ro + rd * t;
+    vec3 n = calcNormal(p);
+    vec3 v = -rd;
+    vec3 r = reflect(-v, n);
+
+    // Ambient occlusion approximation
+    float ao = clamp(0.5 + 0.5 * mapScene(p + n * 0.045).x / 0.045, 0.15, 1.0);
+    float fresnel = pow(1.0 - max(dot(n, v), 0.0), 4.0);
+
+    vec3 keyDir = normalize(vec3(-0.55, 0.75, 0.65));
+    vec3 rimDir = normalize(vec3(0.65, 0.25, -0.72));
+    float diffKey = max(dot(n, keyDir), 0.0);
+    float diffRim = max(dot(n, rimDir), 0.0);
+
+    if(hitMat < 1.5){
+      // Brushed Vibranium/Titanium Armor
+      vec3 baseMetal = vec3(0.46, 0.50, 0.56);
+      vec3 env = envReflection(r);
+      vec3 specKey = vec3(1.0, 0.98, 0.96) * pow(max(dot(r, keyDir), 0.0), 42.0) * 1.35;
+      vec3 specRim = vec3(1.0, 0.14, 0.20) * pow(max(dot(r, rimDir), 0.0), 16.0) * 1.1;
+      col = baseMetal * (0.14 + 0.45 * diffKey) * ao
+          + env * mix(0.42, 0.95, fresnel) * ao
+          + specKey + specRim
+          + vec3(0.95, 0.10, 0.16) * diffRim * 0.35;
+    } else if(hitMat < 2.5){
+      // Dark Gunmetal Inner Chassis
+      vec3 darkMetal = vec3(0.06, 0.075, 0.095);
+      vec3 env = envReflection(r) * 0.32;
+      vec3 spec = vec3(0.7, 0.78, 0.9) * pow(max(dot(r, keyDir), 0.0), 24.0) * 0.5;
+      col = darkMetal * (0.25 + 0.5 * diffKey) * ao + env * (0.3 + 0.7 * fresnel) + spec;
+    } else {
+      // Incandescent Crimson Plasma (Eyes, Mouth Furnace, Arc Core)
+      float pulse = 0.88 + 0.12 * sin(uTime * 3.5) + uTalk * 0.25;
+      float coreHot = pow(max(dot(n, v), 0.0), 1.5);
+      col = mix(vec3(1.0, 0.06, 0.12), vec3(1.0, 0.82, 0.85), coreHot) * (1.85 * pulse);
+    }
+    alpha = 1.0;
+  }
+
+  // Volumetric crimson plasma bloom around eyes, mouth & core
+  float plasmaBloom = exp(-minGlowDist * 18.0) * (0.55 + 0.2 * uTalk);
+  col += vec3(1.0, 0.08, 0.14) * plasmaBloom;
+  alpha = max(alpha, clamp(plasmaBloom * 1.4, 0.0, 1.0));
+
+  // Filmic tone-mapping & contrast punch
+  col = col / (col + vec3(0.65));
+  col = pow(max(col, 0.0), vec3(0.92));
+
+  gl_FragColor = vec4(col, alpha);
+}
+</script>
+
 <script>
 const reply=document.getElementById('reply'),
       voiceStatus=document.getElementById('voiceStatus'),
       micStatus=document.getElementById('micStatus'),
       sitBtn=document.getElementById('sitBtn'),
       standBtn=document.getElementById('standBtn'),
-      canvas=document.getElementById('ultronCanvas'),
-      ctx=canvas.getContext('2d');
+      canvas=document.getElementById('glCanvas');
 
 const state={
   zoom:1,
@@ -90,398 +452,89 @@ const state={
   sitMode:false,
   sitBlend:0,
   speaking:false,
+  talkAmp:0,
   px:0,
   py:0,
-  yaw:0,
-  pitch:0
+  lookX:0,
+  lookY:0
 };
-
-function resize(){
-  const dpr=Math.min(window.devicePixelRatio||1,2);
-  const r=canvas.getBoundingClientRect();
-  canvas.width=Math.max(1,Math.floor(r.width*dpr));
-  canvas.height=Math.max(1,Math.floor(r.height*dpr));
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-window.addEventListener('resize',resize);
-resize();
 
 window.addEventListener('pointermove',e=>{
   state.px=Math.max(-1,Math.min(1,(e.clientX/window.innerWidth)*2-1));
   state.py=Math.max(-1,Math.min(1,(e.clientY/window.innerHeight)*2-1));
 });
 
-// 3D projection helper with true foreshortening
-function proj(x,y,z,yaw,pitch,fov=620){
-  const cy=Math.cos(yaw), sy=Math.sin(yaw);
-  const x1=x*cy - z*sy;
-  const z1=x*sy + z*cy;
-  const cp=Math.cos(pitch), sp=Math.sin(pitch);
-  const y2=y*cp - z1*sp;
-  const z2=y*sp + z1*cp;
-  const s=fov/(fov+z2);
-  return {x:x1*s, y:y2*s, z:z2, s};
+const gl=canvas.getContext('webgl',{alpha:true,antialias:true,premultipliedAlpha:false});
+let prog,uRes,uTime,uZoom,uSit,uTalk,uLook;
+
+function initGL(){
+  if(!gl)return;
+  function compile(type,src){
+    const s=gl.createShader(type);
+    gl.shaderSource(s,src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  prog=gl.createProgram();
+  gl.attachShader(prog,compile(gl.VERTEX_SHADER,document.getElementById('vs').textContent));
+  gl.attachShader(prog,compile(gl.FRAGMENT_SHADER,document.getElementById('fs').textContent));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const buf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const aPos=gl.getAttribLocation(prog,'aPos');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
+
+  uRes=gl.getUniformLocation(prog,'uRes');
+  uTime=gl.getUniformLocation(prog,'uTime');
+  uZoom=gl.getUniformLocation(prog,'uZoom');
+  uSit=gl.getUniformLocation(prog,'uSit');
+  uTalk=gl.getUniformLocation(prog,'uTalk');
+  uLook=gl.getUniformLocation(prog,'uLook');
 }
+initGL();
 
-// Curved 3D metallic limb / cylinder renderer
-function drawLimb(p1,p2,r1,r2,yaw,pitch,dark=false){
-  const a=proj(p1[0],p1[1],p1[2],yaw,pitch);
-  const b=proj(p2[0],p2[1],p2[2],yaw,pitch);
-  const ra=r1*a.s, rb=r2*b.s;
-  const dx=b.x-a.x, dy=b.y-a.y;
-  const len=Math.hypot(dx,dy)||1;
-  const nx=-dy/len, ny=dx/len;
-
-  const g=ctx.createLinearGradient(a.x-nx*ra,a.y-ny*ra,a.x+nx*ra,a.y+ny*ra);
-  if(dark){
-    g.addColorStop(0,'#090c12');
-    g.addColorStop(0.28,'#2b3340');
-    g.addColorStop(0.55,'#11161f');
-    g.addColorStop(0.85,'#3c4656');
-    g.addColorStop(1,'#07090d');
-  }else{
-    g.addColorStop(0,'#1c222c');
-    g.addColorStop(0.18,'#9ea9b8');
-    g.addColorStop(0.34,'#f4f8fc');
-    g.addColorStop(0.52,'#495363');
-    g.addColorStop(0.76,'#19202a');
-    g.addColorStop(0.92,'#a8b4c4');
-    g.addColorStop(1,'#141922');
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(a.x+nx*ra,a.y+ny*ra);
-  ctx.quadraticCurveTo((a.x+b.x)*0.5+nx*(ra+rb)*0.54,(a.y+b.y)*0.5+ny*(ra+rb)*0.54,b.x+nx*rb,b.y+ny*rb);
-  ctx.lineTo(b.x-nx*rb,b.y-ny*rb);
-  ctx.quadraticCurveTo((a.x+b.x)*0.5-nx*(ra+rb)*0.54,(a.y+b.y)*0.5-ny*(ra+rb)*0.54,a.x-nx*ra,a.y-ny*ra);
-  ctx.closePath();
-  ctx.fillStyle=g;
-  ctx.fill();
-  ctx.strokeStyle=dark?'rgba(120,135,155,0.28)':'rgba(230,242,255,0.45)';
-  ctx.lineWidth=1.1;
-  ctx.stroke();
-
-  // Joint end-cap sphere shading
-  const cap=ctx.createRadialGradient(a.x-ra*0.25,a.y-ra*0.25,1,a.x,a.y,ra);
-  cap.addColorStop(0,dark?'#4b5668':'#eef5fc');
-  cap.addColorStop(0.55,dark?'#181e28':'#566273');
-  cap.addColorStop(1,'#090c12');
-  ctx.beginPath();ctx.arc(a.x,a.y,ra*0.95,0,Math.PI*2);ctx.fillStyle=cap;ctx.fill();
-}
-
-// Sculpted 3D curved surface patch
-function drawCurvedPatch(pts3d,yaw,pitch,opts={}){
-  const pts=pts3d.map(p=>proj(p[0],p[1],p[2],yaw,pitch));
-  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9,avgZ=0;
-  for(const p of pts){
-    if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x;
-    if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y;
-    avgZ+=p.z;
-  }
-  avgZ/=pts.length;
-
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x,pts[0].y);
-  for(let i=0;i<pts.length;i++){
-    const p1=pts[i], p2=pts[(i+1)%pts.length];
-    const mx=(p1.x+p2.x)*0.5, my=(p1.y+p2.y)*0.5;
-    if(opts.sharp){
-      ctx.lineTo(p2.x,p2.y);
-    }else{
-      ctx.quadraticCurveTo(p1.x,p1.y,mx,my);
-    }
-  }
-  ctx.closePath();
-
-  const g=ctx.createLinearGradient(minX,minY,maxX,maxY);
-  if(opts.dark){
-    g.addColorStop(0,'#272f3b');
-    g.addColorStop(0.35,'#10151d');
-    g.addColorStop(0.75,'#070a0f');
-    g.addColorStop(1,'#1e2530');
-  }else{
-    g.addColorStop(0,'#f6faff');
-    g.addColorStop(0.18,'#9ea9b8');
-    g.addColorStop(0.42,'#3c4654');
-    g.addColorStop(0.65,'#19202a');
-    g.addColorStop(0.86,'#bcc7d6');
-    g.addColorStop(1,'#29313d');
-  }
-  ctx.fillStyle=g;
-  ctx.fill();
-
-  if(opts.rim!==false){
-    ctx.strokeStyle=opts.rimColor||(opts.dark?'rgba(110,125,145,0.35)':'rgba(240,248,255,0.6)');
-    ctx.lineWidth=opts.lw||1.2;
-    ctx.stroke();
-  }
-  return avgZ;
-}
-
-function drawGlow3D(pts3d,yaw,pitch,intensity=1){
-  const pts=pts3d.map(p=>proj(p[0],p[1],p[2],yaw,pitch));
-  ctx.save();
-  ctx.shadowColor=`rgba(255,22,42,${0.95*intensity})`;
-  ctx.shadowBlur=22*intensity;
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x,pts[0].y);
-  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
-  ctx.closePath();
-  ctx.fillStyle='#ff1930';
-  ctx.fill();
-  ctx.shadowBlur=7;
-  ctx.fillStyle='#ffe6ea';
-  ctx.fill();
-  ctx.restore();
-}
-
-function renderHead(t,talk,yaw,pitch){
-  ctx.save();
-  const hy=yaw*1.45;
-  const hp=pitch*1.15;
-
-  // 1. Rear spherical titanium cranium dome (eliminates flat hexagon look)
-  const c0=proj(0,-42,-8,hy,hp);
-  const rx=66*c0.s, ry=84*c0.s;
-  const dome=ctx.createRadialGradient(c0.x-rx*0.32,c0.y-ry*0.35,rx*0.08,c0.x,c0.y,ry*1.15);
-  dome.addColorStop(0,'#f7fbff');
-  dome.addColorStop(0.22,'#9aa6b5');
-  dome.addColorStop(0.52,'#343e4c');
-  dome.addColorStop(0.8,'#131820');
-  dome.addColorStop(1,'#4c5768');
-  ctx.beginPath();
-  ctx.ellipse(c0.x,c0.y,rx,ry,0,0,Math.PI*2);
-  ctx.fillStyle=dome;
-  ctx.fill();
-  ctx.strokeStyle='rgba(220,235,250,0.45)';
-  ctx.lineWidth=1.4;
-  ctx.stroke();
-
-  // 2. Ear / Temple Rotary Actuators
-  for(const s of [-1,1]){
-    const ear=proj(s*64,-24,2,hy,hp);
-    const er=17*ear.s;
-    const eg=ctx.createRadialGradient(ear.x-s*4,ear.y-4,2,ear.x,ear.y,er);
-    eg.addColorStop(0,'#cfd9e6');eg.addColorStop(0.5,'#2f3846');eg.addColorStop(1,'#0b0e14');
-    ctx.beginPath();ctx.ellipse(ear.x,ear.y,er*0.65,er,0,0,Math.PI*2);ctx.fillStyle=eg;ctx.fill();
-    drawGlow3D([[s*66,-30,8],[s*69,-28,12],[s*69,-16,12],[s*66,-14,8]],hy,hp,0.85);
-  }
-
-  // 3. Sculpted Forehead Helmet & Menacing V-Brow Ridge
-  drawCurvedPatch([
-    [-56,-56,16],[-34,-108,8],[0,-118,18],[34,-108,8],[56,-56,16],
-    [60,-28,34],[36,-22,48],[0,-14,54],[-36,-22,48],[-60,-28,34]
-  ],hy,hp,{lw:1.5});
-
-  // Central Cranial Ridge (iconic Ultron crest)
-  drawCurvedPatch([
-    [-11,-116,14],[0,-120,24],[11,-116,14],
-    [14,-56,42],[0,-15,56],[-14,-56,42]
-  ],hy,hp,{lw:1.3});
-
-  // Deep Ocular Recess (shadowed socket under brow)
-  drawCurvedPatch([
-    [-54,-24,30],[-18,-22,46],[0,-13,52],[18,-22,46],[54,-24,30],
-    [48,6,34],[18,12,44],[-18,12,44],[-48,6,34]
-  ],hy,hp,{dark:true,sharp:true,rimColor:'rgba(255,35,55,0.4)'});
-
-  // 4. Fierce Glowing Red Eyes (angled predator slits)
-  const eyePulse=0.88+0.12*Math.sin(t*3.5);
-  for(const s of [-1,1]){
-    drawGlow3D([
-      [s*15,-12,48],[s*48,-20,35],[s*51,-12,33],[s*36,-3,41],[s*17,-4,48]
-    ],hy,hp,eyePulse);
-  }
-
-  // 5. High Angular Cheekbones & Swept Side-Plates
-  for(const s of [-1,1]){
-    drawCurvedPatch([
-      [s*61,-24,26],[s*66,14,14],[s*48,54,22],[s*26,68,36],[s*24,24,44],[s*46,2,38]
-    ],hy,hp,{lw:1.4});
-    // Dark recessed cheek vent
-    drawCurvedPatch([
-      [s*44,14,32],[s*58,10,22],[s*52,36,24],[s*38,38,34]
-    ],hy,hp,{dark:true,sharp:true});
-  }
-
-  // 6. Sharp Titanium Nasal Bridge
-  drawCurvedPatch([
-    [-9,-15,53],[9,-15,53],[13,18,52],[0,25,56],[-13,18,52]
-  ],hy,hp,{sharp:true,lw:1.4});
-
-  // 7. Articulated Lower Jaw & Glowing Furnace Mouth Grille
-  const jawDrop=talk*9;
-  drawCurvedPatch([
-    [-32,22+jawDrop,38],[32,22+jawDrop,38],
-    [36,56+jawDrop,32],[20,84+jawDrop,36],[0,90+jawDrop,40],[-20,84+jawDrop,36],[-36,56+jawDrop,32]
-  ],hy,hp,{lw:1.5});
-
-  // Dark mouth cavity + internal red furnace glow
-  drawCurvedPatch([
-    [-24,26+jawDrop,42],[24,26+jawDrop,42],
-    [25,54+jawDrop,38],[14,68+jawDrop,40],[-14,68+jawDrop,40],[-25,54+jawDrop,38]
-  ],hy,hp,{dark:true,sharp:true});
-
-  const mouthHeat=0.32+talk*0.68+0.1*Math.sin(t*4.5);
-  drawGlow3D([
-    [-20,31+jawDrop,43],[20,31+jawDrop,43],[18,58+jawDrop,41],[-18,58+jawDrop,41]
-  ],hy,hp,mouthHeat);
-
-  // Titanium mouth grille bars
-  for(const gx of [-14,-7,0,7,14]){
-    drawCurvedPatch([
-      [gx-2,27+jawDrop,45],[gx+2,27+jawDrop,45],
-      [gx+1.8,63+jawDrop,43],[gx-1.8,63+jawDrop,43]
-    ],hy,hp,{sharp:true,lw:0.8});
-  }
-
-  // Chin armor guard
-  drawCurvedPatch([
-    [-20,64+jawDrop,41],[20,64+jawDrop,41],[14,84+jawDrop,39],[0,89+jawDrop,42],[-14,84+jawDrop,39]
-  ],hy,hp,{lw:1.3});
-
-  ctx.restore();
-}
-
-function renderBody(t,talk,breath,yaw,pitch){
-  const ty=yaw*0.45;
-  const tp=pitch*0.35;
-
-  // Hydraulic Neck Spine & Pistons
-  drawLimb([0,56,-6],[0,136,-4],32,42,ty,tp,true);
-  for(const s of [-1,1]){
-    drawLimb([s*20,64,6],[s*30,134,12],9,12,ty,tp,false);
-    drawLimb([s*28,74,-12],[s*38,136,-8],7,9,ty,tp,true);
-  }
-
-  // Upper Torso & Tapered V-Shape Chassis
-  drawLimb([0,138,0],[0,256,6],94,76,ty,tp,true);
-  drawLimb([0,254,6],[0,368,2],74,52,ty,tp,true);
-
-  // Armored Collar Ring
-  drawCurvedPatch([
-    [-58,118,12],[-24,132,34],[0,138,40],[24,132,34],[58,118,12],
-    [66,142,18],[0,158,46],[-66,142,18]
-  ],ty,tp,{lw:1.5});
-
-  // Massive Layered Shoulder Pauldrons (3D curved domes)
-  for(const s of [-1,1]){
-    drawLimb([s*96,154+breath*2,-4],[s*132,208+breath*2,4],48,38,ty,tp,false);
-    drawCurvedPatch([
-      [s*74,128+breath*2,14],[s*126,134+breath*2,6],[s*162,178+breath*2,12],
-      [s*154,224+breath*2,24],[s*102,216+breath*2,34],[s*76,174+breath*2,32]
-    ],ty,tp,{lw:1.6});
-    drawGlow3D([
-      [s*118,168+breath*2,28],[s*142,164+breath*2,20],[s*145,176+breath*2,20],[s*121,180+breath*2,28]
-    ],ty,tp,0.8);
-  }
-
-  // Broad Sculpted Pectoral Armor Plates
-  for(const s of [-1,1]){
-    drawCurvedPatch([
-      [s*12,142,42],[s*88,138,24],[s*104,204,32],[s*74,234,44],[s*15,222,50]
-    ],ty,tp,{lw:1.6});
-  }
-
-  // Central Sternum & Glowing Arc-Core Slit
-  drawCurvedPatch([
-    [-20,144,48],[20,144,48],[26,246,48],[0,268,52],[-26,246,48]
-  ],ty,tp,{dark:true,sharp:true});
-
-  const corePulse=0.82+0.18*Math.sin(t*2.8)+talk*0.25;
-  drawGlow3D([
-    [-8,172,51],[8,172,51],[12,234,51],[0,248,54],[-12,234,51]
-  ],ty,tp,corePulse);
-
-  // Segmented Rib / Abdominal Muscle Armor
-  for(let r=0;r<4;r++){
-    const y=244+r*28;
-    const w=72-r*6;
-    const z=46-r*2;
-    for(const s of [-1,1]){
-      drawCurvedPatch([
-        [s*10,y+3,z+4],[s*w,y-4,z-12],[s*(w-5),y+18,z-12],[s*12,y+23,z+4]
-      ],ty,tp,{lw:1.3});
-    }
-  }
-
-  // 3D Cylindrical Arms, Elbow Joints, Forearm Gauntlets & Claws
-  for(const s of [-1,1]){
-    const sh=[s*132,206+breath*2,4];
-    const el=[s*152,306+breath*2,14];
-    const wr=[s*162,418+breath*2,32];
-    drawLimb(sh,el,26,21,ty,tp,true);
-    drawLimb([s*134,218+breath*2,12],[s*148,292+breath*2,20],22,18,ty,tp,false);
-    drawLimb(el,wr,23,17,ty,tp,false);
-    drawGlow3D([
-      [s*156,332+breath*2,34],[s*161,332+breath*2,32],[s*165,382+breath*2,39],[s*160,382+breath*2,41]
-    ],ty,tp,0.75);
-    // Mechanical Hand & Claws
-    drawLimb(wr,[s*164,446+breath*2,38],16,13,ty,tp,true);
-    for(let f=-1;f<=1;f++){
-      drawLimb([s*(162+f*6),446+breath*2,38+f*4],[s*(160+f*7),476+breath*2,42+f*4],4.5,2.5,ty,tp,false);
-    }
-  }
-
-  // Pelvis & Heavy Armored Legs
-  drawLimb([0,366,2],[0,428,6],54,48,ty,tp,false);
-  drawCurvedPatch([[-20,372,42],[20,372,42],[24,438,44],[0,452,48],[-24,438,44]],ty,tp,{dark:true,sharp:true});
-
-  for(const s of [-1,1]){
-    const hip=[s*46,418,4];
-    const knee=[s*54,536,16];
-    const ankle=[s*58,664,6];
-    drawLimb(hip,knee,30,23,ty,tp,false);
-    drawLimb(knee,ankle,25,18,ty,tp,false);
-    drawGlow3D([[s*52,562,38],[s*57,562,38],[s*59,624,32],[s*54,624,32]],ty,tp,0.7);
-    // Armored Foot
-    drawCurvedPatch([
-      [s*34,658,10],[s*82,658,10],[s*94,692,42],[s*26,692,42]
-    ],ty,tp,{lw:1.5});
+function resize(){
+  const dpr=Math.min(window.devicePixelRatio||1,1.75);
+  const w=Math.max(1,Math.floor(canvas.clientWidth*dpr));
+  const h=Math.max(1,Math.floor(canvas.clientHeight*dpr));
+  if(canvas.width!==w||canvas.height!==h){
+    canvas.width=w;
+    canvas.height=h;
   }
 }
+window.addEventListener('resize',resize);
+resize();
 
-function render(now){
+function loop(now){
   const t=now*0.001;
   state.zoom+=(state.targetZoom-state.zoom)*0.12;
-  state.sitBlend+=((state.sitMode?1:0)-state.sitBlend)*0.1;
-  state.yaw+=(state.px*0.36-state.yaw)*0.08;
-  state.pitch+=(state.py*0.24-state.pitch)*0.08;
+  state.sitBlend+=((state.sitMode?1:0)-state.sitBlend)*0.09;
+  state.lookX+=(state.px-state.lookX)*0.08;
+  state.lookY+=(state.py-state.lookY)*0.08;
+  const targetTalk=state.speaking?(0.4+0.6*Math.abs(Math.sin(t*15))):0.0;
+  state.talkAmp+=(targetTalk-state.talkAmp)*0.22;
 
-  const w=canvas.clientWidth;
-  const h=canvas.clientHeight;
-  ctx.clearRect(0,0,w,h);
-
-  const talk=state.speaking?(0.35+0.65*Math.abs(Math.sin(t*14))):0;
-  const breath=Math.sin(t*2.1);
-
-  // Backlit crimson rim aura
-  const aura=ctx.createRadialGradient(w*0.5,h*0.44,12,w*0.5,h*0.46,Math.min(w,h)*0.45);
-  aura.addColorStop(0,'rgba(255,24,44,0.32)');
-  aura.addColorStop(0.55,'rgba(160,10,24,0.14)');
-  aura.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=aura;
-  ctx.fillRect(0,0,w,h);
-
-  ctx.save();
-  const standScale=Math.min(w/420,h/840)*state.zoom;
-  const bustScale=Math.min(w/260,h/400)*state.zoom;
-  const scale=standScale+(bustScale-standScale)*state.sitBlend;
-
-  const standY=h*0.20+breath*4;
-  const bustY=h*0.45+breath*3;
-  const cy=standY+(bustY-standY)*state.sitBlend;
-
-  ctx.translate(w*0.5,cy);
-  ctx.scale(scale,scale);
-
-  renderBody(t,talk,breath,state.yaw,state.pitch);
-  renderHead(t,talk,state.yaw,state.pitch);
-
-  ctx.restore();
-  requestAnimationFrame(render);
+  if(gl&&prog){
+    resize();
+    gl.viewport(0,0,canvas.width,canvas.height);
+    gl.clearColor(0,0,0,0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform2f(uRes,canvas.width,canvas.height);
+    gl.uniform1f(uTime,t);
+    gl.uniform1f(uZoom,state.zoom);
+    gl.uniform1f(uSit,state.sitBlend);
+    gl.uniform1f(uTalk,state.talkAmp);
+    gl.uniform2f(uLook,state.lookX,state.lookY);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  }
+  requestAnimationFrame(loop);
 }
-requestAnimationFrame(render);
+requestAnimationFrame(loop);
 
 function say(text,lang='en-IN'){
   reply.textContent=text;
