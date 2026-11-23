@@ -35,27 +35,9 @@ body{background:radial-gradient(ellipse at 50% 65%,#4d1010 0,#17090d 34%,#07080c
 .status{font-size:11px;letter-spacing:.18em;color:#ff8d95;border:1px solid #8f2733;padding:9px 13px;background:#1a080bbd}
 .status i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff273d;box-shadow:0 0 12px #ff273d;margin-right:8px}
 .stage{position:absolute;inset:75px 0 100px;display:flex;align-items:center;justify-content:center;perspective:1000px}
-.floor{position:absolute;bottom:0;width:min(900px,95vw);height:150px;background:radial-gradient(ellipse,rgba(255,52,20,.3),transparent 67%);border-radius:50%;transform:rotateX(65deg)}
-.robot-wrap{position:relative;width:min(62vw,510px);height:min(76vh,700px);min-height:410px;display:flex;align-items:center;justify-content:center;transform:scale(var(--zoom,1));transform-origin:center 58%;transition:transform .35s ease,opacity .35s;animation:ultronIdle 4.2s ease-in-out infinite}
-.robot{height:100%;width:100%;filter:drop-shadow(0 0 28px rgba(255,24,42,.3))}
-.robot .metal{fill:url(#steel);stroke:#8a94a0;stroke-width:1.8;stroke-linejoin:round}
-.robot .metal-hi{fill:url(#steelHi);stroke:#b6c0ca;stroke-width:1.6;stroke-linejoin:round}
-.robot .dark{fill:#0d1218;stroke:#5d6672;stroke-width:1.6;stroke-linejoin:round}
-.robot .frame{fill:#181f29;stroke:#48505b;stroke-width:1.5;stroke-linejoin:round}
-.robot .red{fill:#ff1e36;filter:url(#glow)}
-.robot .line{fill:none;stroke:#9aa4b0;stroke-width:2;opacity:.75;stroke-linecap:round;stroke-linejoin:round}
-.robot .seam{fill:none;stroke:#07090d;stroke-width:2.2;opacity:.85;stroke-linecap:round}
-.robot .joint{fill:#070a0f;stroke:#86909c;stroke-width:2.4;stroke-linejoin:round}
-.robot .eye{fill:#ff2237;filter:url(#glow);animation:eyePulse 2.8s ease-in-out infinite}
-.robot .chest{fill:#0e141c;stroke:#7b8591;stroke-width:2.2;stroke-linejoin:round}
-.robot .core{fill:#ff1e36;filter:url(#glow);animation:corePulse 2.8s ease-in-out infinite}
-.sit-face{position:absolute;width:min(88vw,820px);height:auto;opacity:0;transform:scale(.72);transition:all .45s ease;filter:drop-shadow(0 0 38px rgba(255,20,42,.48));pointer-events:none}
-.sit-face.active{opacity:1;transform:scale(1)}
-.robot-wrap.hidden{opacity:0;transform:scale(.3)}
-@keyframes ultronIdle{0%,100%{translate:0 0}50%{translate:0 -5px}}
-@keyframes eyePulse{0%,100%{opacity:1}50%{opacity:.78}}
-@keyframes corePulse{0%,100%{opacity:.95}50%{opacity:.55}}
-.caption{position:absolute;bottom:12px;text-align:center;letter-spacing:.28em;font-size:11px;color:#c6c8ce;text-shadow:0 0 12px #f22}
+.floor{position:absolute;bottom:0;width:min(900px,95vw);height:150px;background:radial-gradient(ellipse,rgba(255,52,20,.34),transparent 67%);border-radius:50%;transform:rotateX(65deg)}
+#ultronCanvas{width:100%;height:100%;display:block;z-index:2;filter:drop-shadow(0 16px 35px rgba(0,0,0,.85))}
+.caption{position:absolute;bottom:12px;text-align:center;letter-spacing:.28em;font-size:11px;color:#c6c8ce;text-shadow:0 0 12px #f22;z-index:3}
 .controls{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(720px,94vw);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;z-index:5}
 button{border:1px solid #76303a;background:rgba(15,10,15,.88);color:#f5f5f7;padding:12px 17px;letter-spacing:.12em;font-size:10px;font-weight:700;cursor:pointer;transition:.2s}
 button:hover,button:focus{border-color:#ff3448;box-shadow:0 0 18px #ff263844;outline:none}
@@ -63,14 +45,14 @@ button.primary{background:linear-gradient(135deg,#a50c20,#4d0913);border-color:#
 button.active{background:#64101c;border-color:#ff3348}
 .zoom{display:flex;align-items:center;gap:9px;border:1px solid #59212a;background:#100b10;padding:8px 12px;color:#bbb;font-size:10px}
 input[type=range]{width:95px;accent-color:#ff2638}
-.console{position:absolute;left:24px;bottom:115px;width:230px;color:#d6a4a8;font:10px/1.8 monospace;letter-spacing:.05em;opacity:.8}
+.console{position:absolute;left:24px;bottom:115px;width:230px;color:#d6a4a8;font:10px/1.8 monospace;letter-spacing:.05em;opacity:.85;z-index:3}
 .console strong{color:#ff5261}
-.mic-state{position:absolute;right:24px;bottom:115px;text-align:right;font:10px/1.8 monospace;color:#c7c7cc}
+.mic-state{position:absolute;right:24px;bottom:115px;text-align:right;font:10px/1.8 monospace;color:#c7c7cc;z-index:3}
 .mic-state strong{color:#ff5261}
 .chat{position:absolute;top:82px;right:22px;width:min(280px,42vw);padding:13px;background:rgba(5,7,11,.62);border:1px solid #57232c;backdrop-filter:blur(8px);font-size:12px;z-index:4}
 .chat small{display:block;color:#ff6876;letter-spacing:.18em;margin-bottom:7px}
 #reply{color:#eee;min-height:30px;line-height:1.5}
-@media(max-width:650px){.topbar{padding:16px}.stage{inset:70px 0 145px}.robot-wrap{width:95vw;height:65vh;min-height:390px}.chat{top:68px;right:10px;width:155px;font-size:10px}.console{left:12px;bottom:142px;width:150px;font-size:8px}.mic-state{right:12px;bottom:142px;font-size:8px}.controls{bottom:13px;gap:6px}button{padding:11px 12px;font-size:9px}.zoom{padding:7px}.caption{bottom:5px}}
+@media(max-width:650px){.topbar{padding:16px}.stage{inset:70px 0 145px}.chat{top:68px;right:10px;width:155px;font-size:10px}.console{left:12px;bottom:142px;width:150px;font-size:8px}.mic-state{right:12px;bottom:142px;font-size:8px}.controls{bottom:13px;gap:6px}button{padding:11px 12px;font-size:9px}.zoom{padding:7px}.caption{bottom:5px}}
 </style>
 </head>
 <body>
@@ -80,169 +62,7 @@ input[type=range]{width:95px;accent-color:#ff2638}
  <div class="chat"><small>ULTRON // RESPONSE</small><div id="reply">Awaiting your command, Shivam Sir.</div></div>
  <main class="stage">
   <div class="floor"></div>
-  <div class="robot-wrap" id="robotWrap">
-   <svg class="robot" viewBox="0 0 420 700" role="img" aria-label="Ultron armored prime">
-    <defs>
-     <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#e5eaef"/>
-      <stop offset="20%" stop-color="#7a8490"/>
-      <stop offset="46%" stop-color="#222a35"/>
-      <stop offset="74%" stop-color="#9aa4b0"/>
-      <stop offset="100%" stop-color="#2b333f"/>
-     </linearGradient>
-     <linearGradient id="steelHi" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f5f7f9"/>
-      <stop offset="35%" stop-color="#8b95a2"/>
-      <stop offset="75%" stop-color="#343d4a"/>
-      <stop offset="100%" stop-color="#192029"/>
-     </linearGradient>
-     <filter id="glow"><feGaussianBlur stdDeviation="4.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    </defs>
-
-    <!-- Rear/inner neck & spine support -->
-    <path class="frame" d="M182 158 L238 158 L248 228 L172 228 Z"/>
-    <path class="seam" d="M192 172 L228 172 M190 186 L230 186 M188 200 L232 200 M186 214 L234 214"/>
-
-    <!-- Ultron Head: sculpted crown, brow ridge, cheeks, jaw -->
-    <path class="metal" d="M148 38 L175 13 L210 8 L245 13 L272 38 L289 88 L275 144 L244 172 L176 172 L145 144 L131 88 Z"/>
-    <!-- Crown & brow armor plate -->
-    <path class="metal-hi" d="M168 24 L210 15 L252 24 L268 58 L244 73 L210 64 L176 73 L152 58 Z"/>
-    <path class="seam" d="M210 15 L210 64 M176 73 L163 92 M244 73 L257 92"/>
-    <!-- Cheekbone plates -->
-    <path class="metal" d="M146 74 L174 84 L182 122 L162 146 L142 122 Z"/>
-    <path class="metal" d="M274 74 L246 84 L238 122 L258 146 L278 122 Z"/>
-    <!-- Dark face cavity & fierce Ultron eyes -->
-    <path class="dark" d="M164 76 L196 68 L210 77 L224 68 L256 76 L246 106 L222 115 L198 115 L174 106 Z"/>
-    <path class="eye" d="M170 82 L199 77 L203 87 L177 95 Z"/>
-    <path class="eye" d="M250 82 L221 77 L217 87 L243 95 Z"/>
-    <!-- Nose bridge & grimacing mouth plate -->
-    <path class="metal-hi" d="M204 76 L216 76 L219 108 L210 114 L201 108 Z"/>
-    <path class="dark" d="M186 118 L234 118 L228 152 L210 163 L192 152 Z"/>
-    <path class="metal" d="M192 122 L228 122 L224 148 L210 157 L196 148 Z"/>
-    <path class="seam" d="M197 130 L223 130 M198 137 L222 137 M200 144 L220 144 M210 122 L210 156"/>
-    <!-- Ear / temple audio ports -->
-    <path class="dark" d="M132 82 L145 86 L146 122 L133 118 Z"/>
-    <path class="dark" d="M288 82 L275 86 L274 122 L287 118 Z"/>
-    <path class="red" d="M136 96 L141 98 L141 108 L136 106 Z"/>
-    <path class="red" d="M284 96 L279 98 L279 108 L284 106 Z"/>
-
-    <!-- Neck armor & collar -->
-    <path class="metal" d="M172 166 L248 166 L262 204 L242 232 L178 232 L158 204 Z"/>
-    <path class="dark" d="M183 175 L237 175 L246 202 L230 220 L190 220 L174 202 Z"/>
-    <path class="line" d="M186 186 L234 186 M188 198 L232 198"/>
-
-    <!-- Broad layered shoulders (pauldrons) -->
-    <path class="metal-hi" d="M160 206 L104 218 L68 258 L84 312 L138 306 L168 268 Z"/>
-    <path class="metal" d="M98 225 L142 216 L158 255 L134 294 L86 298 L74 262 Z"/>
-    <path class="dark" d="M84 246 L124 238 L134 268 L112 288 L82 286 Z"/>
-    <path class="seam" d="M104 224 L86 298 M124 220 L108 295"/>
-
-    <path class="metal-hi" d="M260 206 L316 218 L352 258 L336 312 L282 306 L252 268 Z"/>
-    <path class="metal" d="M322 225 L278 216 L262 255 L286 294 L334 298 L346 262 Z"/>
-    <path class="dark" d="M336 246 L296 238 L286 268 L308 288 L338 286 Z"/>
-    <path class="seam" d="M316 224 L334 298 M296 220 L312 295"/>
-
-    <!-- Sculpted Torso, Pectorals, Ribbed Abdomen & Reactor Slit -->
-    <path class="chest" d="M158 224 L262 224 L288 298 L266 414 L242 450 L178 450 L154 414 L132 298 Z"/>
-    <!-- Left & Right Pectoral Plates -->
-    <path class="metal-hi" d="M164 234 L206 238 L206 296 L154 302 L148 266 Z"/>
-    <path class="metal-hi" d="M256 234 L214 238 L214 296 L266 302 L272 266 Z"/>
-    <!-- Central sternum & red energy core -->
-    <path class="dark" d="M196 244 L224 244 L228 336 L210 352 L192 336 Z"/>
-    <path class="core" d="M206 274 L214 274 L216 322 L204 322 Z"/>
-    <!-- Segmented abdominal / rib plates -->
-    <path class="metal" d="M164 316 L198 322 L202 340 L168 336 Z"/>
-    <path class="metal" d="M256 316 L222 322 L218 340 L252 336 Z"/>
-    <path class="metal" d="M168 344 L202 348 L205 366 L172 362 Z"/>
-    <path class="metal" d="M252 344 L218 348 L215 366 L248 362 Z"/>
-    <path class="metal" d="M173 370 L205 374 L208 392 L177 388 Z"/>
-    <path class="metal" d="M247 370 L215 374 L212 392 L243 388 Z"/>
-    <path class="dark" d="M176 396 L244 396 L236 438 L184 438 Z"/>
-    <path class="line" d="M184 408 L236 408 M188 422 L232 422"/>
-
-    <!-- Upper Arms, Elbow Joints, Forearms & Articulated Claws -->
-    <path class="metal" d="M78 286 L46 310 L33 388 L50 426 L82 412 L99 338 Z"/>
-    <path class="dark" d="M48 325 L70 316 L82 356 L68 398 L50 405 L42 380 Z"/>
-    <path class="seam" d="M58 322 L54 402 M72 328 L66 396"/>
-    <path class="joint" d="M45 415 L84 410 L96 444 L75 470 L41 455 Z"/>
-    <path class="metal-hi" d="M41 463 L76 467 L88 530 L67 564 L35 546 L23 500 Z"/>
-    <path class="dark" d="M36 486 L68 490 L74 528 L54 545 L33 529 Z"/>
-    <!-- Left mechanical fingers -->
-    <path class="metal" d="M38 548 L50 554 L42 582 L31 577 Z"/>
-    <path class="metal" d="M52 555 L64 558 L60 587 L48 584 Z"/>
-    <path class="metal" d="M66 558 L77 554 L78 581 L67 583 Z"/>
-
-    <path class="metal" d="M342 286 L374 310 L387 388 L370 426 L338 412 L321 338 Z"/>
-    <path class="dark" d="M372 325 L350 316 L338 356 L352 398 L370 405 L378 380 Z"/>
-    <path class="seam" d="M362 322 L366 402 M348 328 L354 396"/>
-    <path class="joint" d="M375 415 L336 410 L324 444 L345 470 L379 455 Z"/>
-    <path class="metal-hi" d="M379 463 L344 467 L332 530 L353 564 L385 546 L397 500 Z"/>
-    <path class="dark" d="M384 486 L352 490 L346 528 L366 545 L387 529 Z"/>
-    <!-- Right mechanical fingers -->
-    <path class="metal" d="M382 548 L370 554 L378 582 L389 577 Z"/>
-    <path class="metal" d="M368 555 L356 558 L360 587 L372 584 Z"/>
-    <path class="metal" d="M354 558 L343 554 L342 581 L353 583 Z"/>
-
-    <!-- Pelvis, Thighs, Knee Guards & Heavy Armored Greaves -->
-    <path class="metal" d="M162 430 L258 430 L276 486 L244 522 L176 522 L144 486 Z"/>
-    <path class="dark" d="M180 448 L240 448 L252 484 L230 506 L190 506 L168 484 Z"/>
-    <path class="metal-hi" d="M198 442 L222 442 L226 492 L210 502 L194 492 Z"/>
-
-    <!-- Left leg -->
-    <path class="metal" d="M165 504 L205 513 L198 594 L179 636 L141 624 L144 560 Z"/>
-    <path class="dark" d="M156 532 L192 538 L186 588 L167 612 L147 602 Z"/>
-    <path class="metal-hi" d="M152 586 L186 592 L182 624 L148 618 Z"/>
-    <path class="metal" d="M142 622 L180 632 L194 674 L178 691 L109 691 L101 675 L118 642 Z"/>
-    <path class="line" d="M124 656 L178 662 M118 672 L182 676"/>
-
-    <!-- Right leg -->
-    <path class="metal" d="M255 504 L215 513 L222 594 L241 636 L279 624 L276 560 Z"/>
-    <path class="dark" d="M264 532 L228 538 L234 588 L253 612 L273 602 Z"/>
-    <path class="metal-hi" d="M268 586 L234 592 L238 624 L272 618 Z"/>
-    <path class="metal" d="M278 622 L240 632 L226 674 L242 691 L311 691 L319 675 L302 642 Z"/>
-    <path class="line" d="M296 656 L242 662 M302 672 L238 676"/>
-
-    <!-- Subtle red indicator accents -->
-    <path class="red" d="M208 12 L212 12 L211 23 L209 23 Z M106 264 L118 272 L115 277 L103 269 Z M314 264 L302 272 L305 277 L317 269 Z"/>
-   </svg>
-  </div>
-
-  <svg class="sit-face" id="sitFace" viewBox="0 0 900 430" aria-label="Ultron face close-up">
-   <defs>
-    <linearGradient id="faceSteel" x1="0" y1="0" x2="1" y2="1">
-     <stop offset="0%" stop-color="#f2f4f7"/>
-     <stop offset="26%" stop-color="#6e7986"/>
-     <stop offset="58%" stop-color="#1d242f"/>
-     <stop offset="82%" stop-color="#9aa4b0"/>
-     <stop offset="100%" stop-color="#262f3b"/>
-    </linearGradient>
-    <linearGradient id="faceCrown" x1="0" y1="0" x2="0" y2="1">
-     <stop offset="0%" stop-color="#ffffff"/>
-     <stop offset="40%" stop-color="#8993a0"/>
-     <stop offset="100%" stop-color="#222a35"/>
-    </linearGradient>
-    <filter id="faceGlow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-   </defs>
-   <!-- Outer armored skull & jaw -->
-   <path fill="url(#faceSteel)" stroke="#b4bec8" stroke-width="6.5" stroke-linejoin="round" d="M105 85 L210 24 L450 8 L690 24 L795 85 L850 210 L790 330 L680 394 L450 420 L220 394 L110 330 L50 210 Z"/>
-   <!-- Sculpted upper crown & brow ridges -->
-   <path fill="url(#faceCrown)" stroke="#c7d0d9" stroke-width="4" stroke-linejoin="round" d="M235 42 L450 22 L665 42 L725 112 L645 142 L535 122 L450 148 L365 122 L255 142 L175 112 Z"/>
-   <path fill="none" stroke="#080c12" stroke-width="5" d="M450 22 L450 148 M365 122 L320 158 M535 122 L580 158"/>
-   <!-- Dark inner face recess -->
-   <path fill="#090e15" stroke="#5d6774" stroke-width="4" stroke-linejoin="round" d="M178 126 L362 128 L420 158 L450 142 L480 158 L538 128 L722 126 L755 215 L685 315 L560 362 L450 385 L340 362 L215 315 L145 215 Z"/>
-   <!-- Cheekbone armor -->
-   <path fill="url(#faceSteel)" stroke="#9aa4b0" stroke-width="4.5" stroke-linejoin="round" d="M142 138 L225 152 L245 235 L195 292 L128 232 Z"/>
-   <path fill="url(#faceSteel)" stroke="#9aa4b0" stroke-width="4.5" stroke-linejoin="round" d="M758 138 L675 152 L655 235 L705 292 L772 232 Z"/>
-   <!-- Fierce glowing red eyes -->
-   <path fill="#ff2238" filter="url(#faceGlow)" d="M222 172 L368 148 L406 176 L264 210 Z"/>
-   <path fill="#ff2238" filter="url(#faceGlow)" d="M678 172 L532 148 L494 176 L636 210 Z"/>
-   <!-- Bridge of nose & mouth grille -->
-   <path fill="url(#faceCrown)" stroke="#aeb8c2" stroke-width="4.5" stroke-linejoin="round" d="M426 154 L474 154 L482 224 L450 242 L418 224 Z"/>
-   <path fill="#111822" stroke="#aeb8c2" stroke-width="5" stroke-linejoin="round" d="M368 248 L532 248 L516 332 L450 366 L384 332 Z"/>
-   <path fill="none" stroke="#cfd6de" stroke-width="6" stroke-linecap="round" d="M382 268 L518 268 M386 289 L514 289 M392 310 L508 310 M404 330 L496 330"/>
-   <path fill="none" stroke="#080c12" stroke-width="4.5" d="M450 248 L450 364"/>
-  </svg>
-
+  <canvas id="ultronCanvas"></canvas>
   <div class="caption">ARTIFICIAL INTELLIGENCE // SUPERIOR MACHINE INTELLIGENCE</div>
  </main>
  <div class="console">CORE STATUS: <strong>STABLE</strong><br>THREAT LEVEL: <strong>MAXIMUM</strong><br>LANGUAGE: <strong>EN / HI</strong></div>
@@ -250,52 +70,420 @@ input[type=range]{width:95px;accent-color:#ff2638}
  <nav class="controls">
   <button class="primary" id="micBtn">🎙 SPEAK</button>
   <button id="sitBtn">SIT MODE</button>
-  <button id="standBtn">STAND</button>
+  <button id="standBtn" class="active">STAND</button>
   <div class="zoom">ZOOM <input id="zoom" type="range" min=".65" max="1.65" step=".05" value="1"><span id="zoomVal">100%</span></div>
   <button id="resetBtn">RESET VIEW</button>
  </nav>
 </div>
 <script>
-const reply=document.getElementById('reply'), robot=document.getElementById('robotWrap'), face=document.getElementById('sitFace');
-const voiceStatus=document.getElementById('voiceStatus'), micStatus=document.getElementById('micStatus');
+const reply=document.getElementById('reply'),
+      voiceStatus=document.getElementById('voiceStatus'),
+      micStatus=document.getElementById('micStatus'),
+      sitBtn=document.getElementById('sitBtn'),
+      standBtn=document.getElementById('standBtn'),
+      canvas=document.getElementById('ultronCanvas'),
+      ctx=canvas.getContext('2d');
+
+let state={
+  zoom:1,
+  targetZoom:1,
+  sitMode:false,
+  sitBlend:0,
+  speaking:false,
+  pointerX:0,
+  pointerY:0,
+  smoothX:0,
+  smoothY:0
+};
+
+function resizeCanvas(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=Math.max(1,Math.floor(rect.width*dpr));
+  canvas.height=Math.max(1,Math.floor(rect.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+window.addEventListener('pointermove',e=>{
+  const nx=(e.clientX/window.innerWidth)*2-1;
+  const ny=(e.clientY/window.innerHeight)*2-1;
+  state.pointerX=Math.max(-1,Math.min(1,nx));
+  state.pointerY=Math.max(-1,Math.min(1,ny));
+});
+
+function poly(pts){
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.closePath();
+}
+
+function chromeGrad(x1,y1,x2,y2,dark=false){
+  const g=ctx.createLinearGradient(x1,y1,x2,y2);
+  if(dark){
+    g.addColorStop(0,'#2e3540');
+    g.addColorStop(.25,'#141922');
+    g.addColorStop(.55,'#090c12');
+    g.addColorStop(.85,'#232a35');
+    g.addColorStop(1,'#0b0e14');
+  }else{
+    g.addColorStop(0,'#f4f7fb');
+    g.addColorStop(.16,'#9ba6b4');
+    g.addColorStop(.38,'#3a4350');
+    g.addColorStop(.56,'#171d26');
+    g.addColorStop(.78,'#c8d1dc');
+    g.addColorStop(.92,'#535e6d');
+    g.addColorStop(1,'#1e2530');
+  }
+  return g;
+}
+
+function drawArmorPlate(pts,x1,y1,x2,y2,opts={}){
+  poly(pts);
+  ctx.fillStyle=chromeGrad(x1,y1,x2,y2,opts.dark);
+  ctx.fill();
+  if(opts.rim!==false){
+    ctx.strokeStyle=opts.rimColor||(opts.dark?'rgba(110,124,142,0.45)':'rgba(235,244,255,0.65)');
+    ctx.lineWidth=opts.lw||1.3;
+    ctx.stroke();
+  }
+  if(opts.innerShadow){
+    ctx.save();
+    ctx.clip();
+    const sg=ctx.createRadialGradient(0,0,10,0,0,260);
+    sg.addColorStop(0,'rgba(255,40,55,0.08)');
+    sg.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=sg;
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawGlowSlit(pts,intensity=1){
+  ctx.save();
+  ctx.shadowColor=`rgba(255,28,46,${0.95*intensity})`;
+  ctx.shadowBlur=18*intensity;
+  poly(pts);
+  ctx.fillStyle='#ff1c32';
+  ctx.fill();
+  ctx.shadowBlur=6;
+  ctx.fillStyle='#ffd2d8';
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawUltronHead(t,talk,lookX,lookY){
+  ctx.save();
+  ctx.translate(lookX*7,lookY*5);
+
+  // Rear cranium & temple hydraulics
+  drawArmorPlate([[-66,-68],[-44,-118],[0,-130],[44,-118],[66,-68],[74,-12],[60,44],[36,80],[-36,80],[-60,44],[-74,-12]],-75,-130,75,85,{dark:true});
+
+  // Ear audio-actuator pods
+  for(const s of [-1,1]){
+    drawArmorPlate([[s*64,-34],[s*80,-24],[s*82,16],[s*63,28]],s*62,-34,s*82,28,{});
+    drawArmorPlate([[s*68,-20],[s*76,-14],[s*77,8],[s*68,14]],s*68,-20,s*77,14,{dark:true});
+    drawGlowSlit([[s*71,-11],[s*75,-8],[s*75,3],[s*71,5]],0.85);
+  }
+
+  // Sculpted Titanium Brow & Crown Helmet
+  drawArmorPlate([
+    [-58,-64],[-40,-112],[0,-125],[40,-112],[58,-64],
+    [66,-28],[46,-16],[22,-27],[0,-18],[-22,-27],[-46,-16],[-66,-28]
+  ],-65,-125,65,-15,{lw:1.6});
+
+  // Center forehead crest & specular ridge
+  drawArmorPlate([[-14,-122],[0,-127],[14,-122],[18,-62],[0,-22],[-18,-62]],-18,-127,18,-22,{lw:1.4});
+  ctx.strokeStyle='rgba(255,255,255,0.75)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,-123);ctx.lineTo(0,-25);ctx.stroke();
+
+  // Brow overhanging shadow plates
+  for(const s of [-1,1]){
+    drawArmorPlate([[s*16,-32],[s*54,-46],[s*66,-26],[s*48,-12],[s*18,-22]],s*15,-46,s*66,-12,{dark:true});
+  }
+
+  // Deep dark ocular cavity
+  drawArmorPlate([
+    [-54,-22],[-20,-24],[0,-15],[20,-24],[54,-22],
+    [48,10],[22,16],[-22,16],[-48,10]
+  ],-54,-24,54,16,{dark:true,rimColor:'rgba(255,45,60,0.35)'});
+
+  // Menacing Angled Ultron Eyes
+  const pulse=0.85+0.15*Math.sin(t*3.2);
+  for(const s of [-1,1]){
+    drawGlowSlit([
+      [s*15,-14],[s*50,-20],[s*53,-12],[s*38,-2],[s*17,-4]
+    ],pulse);
+    // Inner hot pupil flare
+    ctx.save();
+    ctx.fillStyle='#ffffff';
+    ctx.globalAlpha=0.8;
+    poly([[s*22,-12],[s*35,-14],[s*31,-8],[s*21,-8]]);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Sharp angular cheekbones
+  for(const s of [-1,1]){
+    drawArmorPlate([
+      [s*66,-24],[s*73,12],[s*56,52],[s*34,74],[s*28,36],[s*46,6]
+    ],s*28,-24,s*73,74,{lw:1.5});
+    // Cheek vent cut
+    drawArmorPlate([
+      [s*48,14],[s*63,10],[s*58,34],[s*44,36]
+    ],s*44,10,s*63,36,{dark:true});
+  }
+
+  // Nasal bridge plate
+  drawArmorPlate([[-11,-18],[11,-18],[15,18],[0,26],[-15,18]],-15,-18,15,26,{lw:1.5});
+
+  // Animated Lower Jaw & Iconic Ultron Mouth Grille
+  ctx.save();
+  ctx.translate(0,talk*7);
+  drawArmorPlate([
+    [-36,24],[36,24],[42,58],[24,88],[0,96],[-24,88],[-42,58]
+  ],-42,24,42,96,{lw:1.6});
+  // Dark mouth recess with red internal furnace glow
+  drawArmorPlate([
+    [-26,28],[26,28],[29,56],[16,74],[-16,74],[-29,56]
+  ],-29,28,29,74,{dark:true});
+
+  // Red internal mouth glow when speaking or breathing
+  const mouthGlow=0.35+talk*0.65+0.12*Math.sin(t*4);
+  drawGlowSlit([[-21,34],[21,34],[19,63],[-19,63]],mouthGlow);
+
+  // Vertical titanium teeth/grille bars over the glow
+  for(const x of [-15,-7.5,0,7.5,15]){
+    drawArmorPlate([[x-2.3,29],[x+2.3,29],[x+2,69],[x-2,69]],x-2.5,29,x+2.5,69,{lw:0.8});
+  }
+  // Chin armor cap
+  drawArmorPlate([[-22,68],[22,68],[16,90],[0,95],[-16,90]],-22,68,22,95,{lw:1.4});
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function drawUltronBody(t,talk,breath,lookX,lookY){
+  // Mechanical Neck & Hydraulic Pistons
+  drawArmorPlate([[-38,72],[38,72],[48,142],[-48,142]],-48,72,48,142,{dark:true});
+  for(const s of [-1,1]){
+    drawArmorPlate([[s*16,74],[s*30,74],[s*38,138],[s*20,138]],s*16,74,s*38,138,{});
+    // Neck tendons
+    ctx.strokeStyle='#8f9aa8';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(s*24,78);ctx.lineTo(s*30,136);ctx.stroke();
+  }
+  // Throat collar ring
+  drawArmorPlate([[-56,124],[-24,136],[0,142],[24,136],[56,124],[66,148],[0,162],[-66,148]],-66,124,66,162,{lw:1.6});
+
+  // Massive Layered Pauldrons (Shoulders)
+  for(const s of [-1,1]){
+    ctx.save();
+    ctx.translate(s*112,158+breath*2);
+    ctx.rotate(s*0.08);
+    // Outer upper shoulder armor
+    drawArmorPlate([
+      [s*-42,-28],[s*34,-34],[s*76,-4],[s*84,48],[s*46,72],[s*-28,54]
+    ],s*-42,-34,s*84,72,{lw:1.7});
+    // Secondary overlapping shoulder plate
+    drawArmorPlate([
+      [s*-22,-10],[s*44,-14],[s*68,26],[s*42,64],[s*-14,48]
+    ],s*-22,-14,s*68,64,{lw:1.4});
+    // Shoulder red energy vent
+    drawGlowSlit([[s*18,12],[s*44,8],[s*48,20],[s*22,24]],0.8);
+    ctx.restore();
+  }
+
+  // Sculpted Torso Chassis
+  drawArmorPlate([
+    [-92,140],[92,140],[114,225],[86,348],[54,392],[-54,392],[-86,348],[-114,225]
+  ],-114,140,114,392,{dark:true,innerShadow:true});
+
+  // Broad Armored Pectoral Plates
+  for(const s of [-1,1]){
+    drawArmorPlate([
+      [s*12,148],[s*88,144],[s*108,214],[s*78,244],[s*16,232]
+    ],s*12,144,s*108,244,{lw:1.7});
+    // Upper pec bevel highlight
+    drawArmorPlate([
+      [s*22,156],[s*82,152],[s*94,192],[s*24,198]
+    ],s*22,152,s*94,198,{lw:1.2});
+  }
+
+  // Central Sternum & Glowing Arc-Core Slit
+  drawArmorPlate([[-22,148],[22,148],[28,256],[0,278],[-28,256]],-28,148,28,278,{dark:true});
+  const corePulse=0.8+0.2*Math.sin(t*2.6)+talk*0.25;
+  drawGlowSlit([[-9,176],[9,176],[13,242],[0,256],[-13,242]],corePulse);
+  // Core cage bars
+  drawArmorPlate([[-16,196],[16,196],[15,203],[-15,203]],-16,196,16,203,{});
+  drawArmorPlate([[-15,222],[15,222],[13,229],[-13,229]],-15,222,15,229,{});
+
+  // Segmented Rib / Abdominal Armor Plates
+  for(let r=0;r<4;r++){
+    const y=254+r*30;
+    const w=78-r*7;
+    for(const s of [-1,1]){
+      drawArmorPlate([
+        [s*10,y+4],[s*w,y-4],[s*(w-5),y+20],[s*12,y+25]
+      ],s*10,y-4,s*w,y+25,{lw:1.3});
+    }
+  }
+
+  // Upper Arms, Elbow Servos, Forearms & Articulated Claws
+  for(const s of [-1,1]){
+    ctx.save();
+    ctx.translate(s*132,216+breath*2);
+    ctx.rotate(s*0.06);
+    // Bicep dark inner frame + outer armor
+    drawArmorPlate([[s*-22,0],[s*26,0],[s*32,96],[s*-20,96]],s*-22,0,s*32,96,{dark:true});
+    drawArmorPlate([[s*-12,8],[s*28,4],[s*34,84],[s*-8,88]],s*-12,4,s*34,88,{lw:1.4});
+    // Elbow joint ring
+    drawArmorPlate([[s*-24,92],[s*30,92],[s*26,124],[s*-22,124]],s*-24,92,s*30,124,{dark:true});
+    // Heavy Forearm Gauntlet
+    drawArmorPlate([[s*-24,122],[s*32,120],[s*38,218],[s*16,244],[s*-20,236]],s*-24,120,s*38,244,{lw:1.6});
+    drawGlowSlit([[s*16,144],[s*23,144],[s*25,194],[s*18,194]],0.75);
+    // Mechanical Hand & Claws
+    drawArmorPlate([[s*-16,238],[s*22,240],[s*24,268],[s*-14,266]],s*-16,238,s*24,268,{dark:true});
+    for(let f=0;f<3;f++){
+      const fx=-10+f*12;
+      drawArmorPlate([[s*fx,266],[s*(fx+8),266],[s*(fx+5),296],[s*(fx-2),294]],s*fx,266,s*(fx+8),296,{});
+    }
+    ctx.restore();
+  }
+
+  // Pelvis & Hip Armor
+  drawArmorPlate([[-62,382],[62,382],[76,436],[44,468],[-44,468],[-76,436]],-76,382,76,468,{lw:1.6});
+  drawArmorPlate([[-22,386],[22,386],[26,456],[0,470],[-26,456]],-26,386,26,470,{dark:true});
+
+  // Heavy Armored Thighs, Knees & Greaves
+  for(const s of [-1,1]){
+    // Thigh
+    drawArmorPlate([[s*22,436],[s*76,428],[s*82,534],[s*26,542]],s*22,428,s*82,542,{lw:1.6});
+    drawArmorPlate([[s*32,448],[s*68,444],[s*72,518],[s*36,524]],s*32,444,s*72,524,{dark:true});
+    // Knee guard
+    drawArmorPlate([[s*24,528],[s*80,524],[s*76,568],[s*28,572]],s*24,524,s*80,572,{lw:1.6});
+    // Shin / Greave
+    drawArmorPlate([[s*26,566],[s*78,562],[s*86,668],[s*22,672]],s*22,562,s*86,672,{lw:1.6});
+    drawGlowSlit([[s*52,584],[s*58,584],[s*60,644],[s*54,644]],0.7);
+    // Armored Foot
+    drawArmorPlate([[s*18,668],[s*88,666],[s*104,698],[s*14,698]],s*14,666,s*104,698,{lw:1.6});
+  }
+}
+
+function render(now){
+  const t=now*0.001;
+  state.zoom+=(state.targetZoom-state.zoom)*0.12;
+  state.sitBlend+=((state.sitMode?1:0)-state.sitBlend)*0.1;
+  state.smoothX+=(state.pointerX-state.smoothX)*0.08;
+  state.smoothY+=(state.pointerY-state.smoothY)*0.08;
+
+  const w=canvas.clientWidth;
+  const h=canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+
+  const talk=state.speaking?(0.35+0.65*Math.abs(Math.sin(t*14))):0;
+  const breath=Math.sin(t*2.1);
+
+  // Ambient red aura behind Ultron
+  const aura=ctx.createRadialGradient(w*0.5,h*0.44,15,w*0.5,h*0.46,Math.min(w,h)*0.44);
+  aura.addColorStop(0,'rgba(255,28,46,0.28)');
+  aura.addColorStop(0.55,'rgba(170,12,26,0.12)');
+  aura.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=aura;
+  ctx.fillRect(0,0,w,h);
+
+  ctx.save();
+  // Stand view vs Sit Mode close-up bust framing
+  const baseScale=Math.min(w/430,h/840)*state.zoom;
+  const standScale=baseScale;
+  const bustScale=Math.min(w/290,h/430)*state.zoom;
+  const scale=standScale+(bustScale-standScale)*state.sitBlend;
+
+  const standY=h*0.21+breath*4;
+  const bustY=h*0.44+breath*3;
+  const cy=standY+(bustY-standY)*state.sitBlend;
+
+  ctx.translate(w*0.5,cy);
+  ctx.scale(scale,scale);
+
+  drawUltronBody(t,talk,breath,state.smoothX,state.smoothY);
+  drawUltronHead(t,talk,state.smoothX,state.smoothY);
+
+  ctx.restore();
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+
 function say(text,lang='en-IN'){
- reply.textContent=text;
- if(!('speechSynthesis' in window)){voiceStatus.textContent='VOICE UNAVAILABLE';return}
- speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.92;u.pitch=.72;u.volume=1;
- const voices=speechSynthesis.getVoices();
- const match=voices.find(v=>lang.startsWith('hi')?v.lang.toLowerCase().includes('hi'):v.lang.toLowerCase().includes('en'));
- if(match)u.voice=match;
- u.onstart=()=>voiceStatus.textContent='SPEAKING';u.onend=()=>voiceStatus.textContent='STANDBY';
- speechSynthesis.speak(u);
+  reply.textContent=text;
+  if(!('speechSynthesis' in window)){voiceStatus.textContent='VOICE UNAVAILABLE';return}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.9;u.pitch=.65;u.volume=1;
+  const voices=speechSynthesis.getVoices();
+  const match=voices.find(v=>lang.startsWith('hi')?v.lang.toLowerCase().includes('hi'):v.lang.toLowerCase().includes('en'));
+  if(match)u.voice=match;
+  u.onstart=()=>{voiceStatus.textContent='SPEAKING';state.speaking=true;};
+  u.onend=()=>{voiceStatus.textContent='STANDBY';state.speaking=false;};
+  u.onerror=()=>{voiceStatus.textContent='STANDBY';state.speaking=false;};
+  speechSynthesis.speak(u);
 }
-function sit(){robot.classList.add('hidden');face.classList.add('active');reply.textContent='Sitting mode engaged. I am watching, Shivam Sir.';say('Sitting mode engaged. I am watching, Shivam Sir.');}
-function stand(){face.classList.remove('active');robot.classList.remove('hidden');say('Standing by, Shivam Sir.');}
-document.getElementById('sitBtn').onclick=sit;document.getElementById('standBtn').onclick=stand;
-document.getElementById('zoom').oninput=e=>{const z=Number(e.target.value);robot.style.setProperty('--zoom',z);face.style.width=(Math.min(88*z,100))+'vw';document.getElementById('zoomVal').textContent=Math.round(z*100)+'%';};
-document.getElementById('resetBtn').onclick=()=>{document.getElementById('zoom').value=1;robot.style.setProperty('--zoom',1);face.style.width='min(88vw,820px)';document.getElementById('zoomVal').textContent='100%';stand();};
+
+function sit(){
+  state.sitMode=true;
+  sitBtn.classList.add('active');
+  standBtn.classList.remove('active');
+  say('Sitting mode engaged. I am watching, Shivam Sir.');
+}
+function stand(){
+  state.sitMode=false;
+  standBtn.classList.add('active');
+  sitBtn.classList.remove('active');
+  say('Standing by, Shivam Sir.');
+}
+
+sitBtn.onclick=sit;
+standBtn.onclick=stand;
+
+document.getElementById('zoom').oninput=e=>{
+  const z=Number(e.target.value);
+  state.targetZoom=z;
+  document.getElementById('zoomVal').textContent=Math.round(z*100)+'%';
+};
+
+document.getElementById('resetBtn').onclick=()=>{
+  document.getElementById('zoom').value=1;
+  state.targetZoom=1;
+  document.getElementById('zoomVal').textContent='100%';
+  stand();
+};
+
 function processCommand(text){
- const t=text.toLowerCase().trim();
- if(/\b(hello|hi|hey)\b/.test(t)||t.includes('नमस्ते')||t.includes('हेलो')){say('Hello Shivam Sir. I am Ultron.');return}
- if(t.includes('sit')||t.includes('बैठ')){sit();return}
- if(t.includes('stand')||t.includes('खड़े')||t.includes('खड़ा')){stand();return}
- if(t.includes('zoom in')){const el=document.getElementById('zoom');el.value=Math.min(1.65,Number(el.value)+.15);el.dispatchEvent(new Event('input'));say('Zooming in.');return}
- if(t.includes('zoom out')){const el=document.getElementById('zoom');el.value=Math.max(.65,Number(el.value)-.15);el.dispatchEvent(new Event('input'));say('Zooming out.');return}
- say('Command received, Shivam Sir. My full command system will be added in the next phase.');
+  const t=text.toLowerCase().trim();
+  if(/\b(hello|hi|hey)\b/.test(t)||t.includes('नमस्ते')||t.includes('हेलो')){say('Hello Shivam Sir. I am Ultron.');return}
+  if(t.includes('sit')||t.includes('बैठ')){sit();return}
+  if(t.includes('stand')||t.includes('खड़े')||t.includes('खड़ा')){stand();return}
+  if(t.includes('zoom in')){const el=document.getElementById('zoom');el.value=Math.min(1.65,Number(el.value)+.15);el.dispatchEvent(new Event('input'));say('Zooming in.');return}
+  if(t.includes('zoom out')){const el=document.getElementById('zoom');el.value=Math.max(.65,Number(el.value)-.15);el.dispatchEvent(new Event('input'));say('Zooming out.');return}
+  say('Command received, Shivam Sir. My full command system will be added in the next phase.');
 }
+
 let recognition;
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 if(SpeechRecognition){
- recognition=new SpeechRecognition();recognition.continuous=false;recognition.interimResults=false;recognition.lang='en-IN';
- recognition.onstart=()=>{micStatus.textContent='LISTENING';voiceStatus.textContent='VOICE LINK ACTIVE'};
- recognition.onend=()=>{micStatus.textContent='READY';};
- recognition.onerror=()=>{micStatus.textContent='MIC ERROR';reply.textContent='Microphone unavailable. Check browser permission.'};
- recognition.onresult=e=>{const spoken=e.results[0][0].transcript;reply.textContent='You: '+spoken;processCommand(spoken)};
+  recognition=new SpeechRecognition();recognition.continuous=false;recognition.interimResults=false;recognition.lang='en-IN';
+  recognition.onstart=()=>{micStatus.textContent='LISTENING';voiceStatus.textContent='VOICE LINK ACTIVE'};
+  recognition.onend=()=>{micStatus.textContent='READY';};
+  recognition.onerror=()=>{micStatus.textContent='MIC ERROR';reply.textContent='Microphone unavailable. Check browser permission.'};
+  recognition.onresult=e=>{const spoken=e.results[0][0].transcript;reply.textContent='You: '+spoken;processCommand(spoken)};
 }else{micStatus.textContent='USE CHROME';}
+
 document.getElementById('micBtn').onclick=()=>{
- if(!recognition){reply.textContent='Voice recognition is not supported in this browser. Try Chrome.';return}
- try{recognition.lang='en-IN';recognition.start()}catch(e){micStatus.textContent='WAIT';}
+  if(!recognition){reply.textContent='Voice recognition is not supported in this browser. Try Chrome.';return}
+  try{recognition.lang='en-IN';recognition.start()}catch(e){micStatus.textContent='WAIT';}
 };
+
 window.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('resetBtn').click()});
 </script>
 </body></html>
