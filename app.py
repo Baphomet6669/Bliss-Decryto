@@ -36,7 +36,7 @@ body{background:radial-gradient(ellipse at 50% 65%,#4d1010 0,#17090d 34%,#07080c
 .status i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff273d;box-shadow:0 0 12px #ff273d;margin-right:8px}
 .stage{position:absolute;inset:75px 0 100px;display:flex;align-items:center;justify-content:center;perspective:1000px}
 .floor{position:absolute;bottom:0;width:min(900px,95vw);height:150px;background:radial-gradient(ellipse,rgba(255,52,20,.34),transparent 67%);border-radius:50%;transform:rotateX(65deg)}
-#ultronCanvas{width:100%;height:100%;display:block;z-index:2;filter:drop-shadow(0 16px 35px rgba(0,0,0,.85))}
+#ultronCanvas{width:100%;height:100%;display:block;z-index:2}
 .caption{position:absolute;bottom:12px;text-align:center;letter-spacing:.28em;font-size:11px;color:#c6c8ce;text-shadow:0 0 12px #f22;z-index:3}
 .controls{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(720px,94vw);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;z-index:5}
 button{border:1px solid #76303a;background:rgba(15,10,15,.88);color:#f5f5f7;padding:12px 17px;letter-spacing:.12em;font-size:10px;font-weight:700;cursor:pointer;transition:.2s}
@@ -84,291 +84,360 @@ const reply=document.getElementById('reply'),
       canvas=document.getElementById('ultronCanvas'),
       ctx=canvas.getContext('2d');
 
-let state={
+const state={
   zoom:1,
   targetZoom:1,
   sitMode:false,
   sitBlend:0,
   speaking:false,
-  pointerX:0,
-  pointerY:0,
-  smoothX:0,
-  smoothY:0
+  px:0,
+  py:0,
+  yaw:0,
+  pitch:0
 };
 
-function resizeCanvas(){
+function resize(){
   const dpr=Math.min(window.devicePixelRatio||1,2);
-  const rect=canvas.getBoundingClientRect();
-  canvas.width=Math.max(1,Math.floor(rect.width*dpr));
-  canvas.height=Math.max(1,Math.floor(rect.height*dpr));
+  const r=canvas.getBoundingClientRect();
+  canvas.width=Math.max(1,Math.floor(r.width*dpr));
+  canvas.height=Math.max(1,Math.floor(r.height*dpr));
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-window.addEventListener('resize',resizeCanvas);
-resizeCanvas();
+window.addEventListener('resize',resize);
+resize();
 
 window.addEventListener('pointermove',e=>{
-  const nx=(e.clientX/window.innerWidth)*2-1;
-  const ny=(e.clientY/window.innerHeight)*2-1;
-  state.pointerX=Math.max(-1,Math.min(1,nx));
-  state.pointerY=Math.max(-1,Math.min(1,ny));
+  state.px=Math.max(-1,Math.min(1,(e.clientX/window.innerWidth)*2-1));
+  state.py=Math.max(-1,Math.min(1,(e.clientY/window.innerHeight)*2-1));
 });
 
-function poly(pts){
-  ctx.beginPath();
-  ctx.moveTo(pts[0][0],pts[0][1]);
-  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
-  ctx.closePath();
+// 3D projection helper with true foreshortening
+function proj(x,y,z,yaw,pitch,fov=620){
+  const cy=Math.cos(yaw), sy=Math.sin(yaw);
+  const x1=x*cy - z*sy;
+  const z1=x*sy + z*cy;
+  const cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const y2=y*cp - z1*sp;
+  const z2=y*sp + z1*cp;
+  const s=fov/(fov+z2);
+  return {x:x1*s, y:y2*s, z:z2, s};
 }
 
-function chromeGrad(x1,y1,x2,y2,dark=false){
-  const g=ctx.createLinearGradient(x1,y1,x2,y2);
+// Curved 3D metallic limb / cylinder renderer
+function drawLimb(p1,p2,r1,r2,yaw,pitch,dark=false){
+  const a=proj(p1[0],p1[1],p1[2],yaw,pitch);
+  const b=proj(p2[0],p2[1],p2[2],yaw,pitch);
+  const ra=r1*a.s, rb=r2*b.s;
+  const dx=b.x-a.x, dy=b.y-a.y;
+  const len=Math.hypot(dx,dy)||1;
+  const nx=-dy/len, ny=dx/len;
+
+  const g=ctx.createLinearGradient(a.x-nx*ra,a.y-ny*ra,a.x+nx*ra,a.y+ny*ra);
   if(dark){
-    g.addColorStop(0,'#2e3540');
-    g.addColorStop(.25,'#141922');
-    g.addColorStop(.55,'#090c12');
-    g.addColorStop(.85,'#232a35');
-    g.addColorStop(1,'#0b0e14');
+    g.addColorStop(0,'#090c12');
+    g.addColorStop(0.28,'#2b3340');
+    g.addColorStop(0.55,'#11161f');
+    g.addColorStop(0.85,'#3c4656');
+    g.addColorStop(1,'#07090d');
   }else{
-    g.addColorStop(0,'#f4f7fb');
-    g.addColorStop(.16,'#9ba6b4');
-    g.addColorStop(.38,'#3a4350');
-    g.addColorStop(.56,'#171d26');
-    g.addColorStop(.78,'#c8d1dc');
-    g.addColorStop(.92,'#535e6d');
-    g.addColorStop(1,'#1e2530');
+    g.addColorStop(0,'#1c222c');
+    g.addColorStop(0.18,'#9ea9b8');
+    g.addColorStop(0.34,'#f4f8fc');
+    g.addColorStop(0.52,'#495363');
+    g.addColorStop(0.76,'#19202a');
+    g.addColorStop(0.92,'#a8b4c4');
+    g.addColorStop(1,'#141922');
   }
-  return g;
+
+  ctx.beginPath();
+  ctx.moveTo(a.x+nx*ra,a.y+ny*ra);
+  ctx.quadraticCurveTo((a.x+b.x)*0.5+nx*(ra+rb)*0.54,(a.y+b.y)*0.5+ny*(ra+rb)*0.54,b.x+nx*rb,b.y+ny*rb);
+  ctx.lineTo(b.x-nx*rb,b.y-ny*rb);
+  ctx.quadraticCurveTo((a.x+b.x)*0.5-nx*(ra+rb)*0.54,(a.y+b.y)*0.5-ny*(ra+rb)*0.54,a.x-nx*ra,a.y-ny*ra);
+  ctx.closePath();
+  ctx.fillStyle=g;
+  ctx.fill();
+  ctx.strokeStyle=dark?'rgba(120,135,155,0.28)':'rgba(230,242,255,0.45)';
+  ctx.lineWidth=1.1;
+  ctx.stroke();
+
+  // Joint end-cap sphere shading
+  const cap=ctx.createRadialGradient(a.x-ra*0.25,a.y-ra*0.25,1,a.x,a.y,ra);
+  cap.addColorStop(0,dark?'#4b5668':'#eef5fc');
+  cap.addColorStop(0.55,dark?'#181e28':'#566273');
+  cap.addColorStop(1,'#090c12');
+  ctx.beginPath();ctx.arc(a.x,a.y,ra*0.95,0,Math.PI*2);ctx.fillStyle=cap;ctx.fill();
 }
 
-function drawArmorPlate(pts,x1,y1,x2,y2,opts={}){
-  poly(pts);
-  ctx.fillStyle=chromeGrad(x1,y1,x2,y2,opts.dark);
+// Sculpted 3D curved surface patch
+function drawCurvedPatch(pts3d,yaw,pitch,opts={}){
+  const pts=pts3d.map(p=>proj(p[0],p[1],p[2],yaw,pitch));
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9,avgZ=0;
+  for(const p of pts){
+    if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x;
+    if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y;
+    avgZ+=p.z;
+  }
+  avgZ/=pts.length;
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=0;i<pts.length;i++){
+    const p1=pts[i], p2=pts[(i+1)%pts.length];
+    const mx=(p1.x+p2.x)*0.5, my=(p1.y+p2.y)*0.5;
+    if(opts.sharp){
+      ctx.lineTo(p2.x,p2.y);
+    }else{
+      ctx.quadraticCurveTo(p1.x,p1.y,mx,my);
+    }
+  }
+  ctx.closePath();
+
+  const g=ctx.createLinearGradient(minX,minY,maxX,maxY);
+  if(opts.dark){
+    g.addColorStop(0,'#272f3b');
+    g.addColorStop(0.35,'#10151d');
+    g.addColorStop(0.75,'#070a0f');
+    g.addColorStop(1,'#1e2530');
+  }else{
+    g.addColorStop(0,'#f6faff');
+    g.addColorStop(0.18,'#9ea9b8');
+    g.addColorStop(0.42,'#3c4654');
+    g.addColorStop(0.65,'#19202a');
+    g.addColorStop(0.86,'#bcc7d6');
+    g.addColorStop(1,'#29313d');
+  }
+  ctx.fillStyle=g;
   ctx.fill();
+
   if(opts.rim!==false){
-    ctx.strokeStyle=opts.rimColor||(opts.dark?'rgba(110,124,142,0.45)':'rgba(235,244,255,0.65)');
-    ctx.lineWidth=opts.lw||1.3;
+    ctx.strokeStyle=opts.rimColor||(opts.dark?'rgba(110,125,145,0.35)':'rgba(240,248,255,0.6)');
+    ctx.lineWidth=opts.lw||1.2;
     ctx.stroke();
   }
-  if(opts.innerShadow){
-    ctx.save();
-    ctx.clip();
-    const sg=ctx.createRadialGradient(0,0,10,0,0,260);
-    sg.addColorStop(0,'rgba(255,40,55,0.08)');
-    sg.addColorStop(1,'rgba(0,0,0,0.55)');
-    ctx.fillStyle=sg;
-    ctx.fill();
-    ctx.restore();
-  }
+  return avgZ;
 }
 
-function drawGlowSlit(pts,intensity=1){
+function drawGlow3D(pts3d,yaw,pitch,intensity=1){
+  const pts=pts3d.map(p=>proj(p[0],p[1],p[2],yaw,pitch));
   ctx.save();
-  ctx.shadowColor=`rgba(255,28,46,${0.95*intensity})`;
-  ctx.shadowBlur=18*intensity;
-  poly(pts);
-  ctx.fillStyle='#ff1c32';
+  ctx.shadowColor=`rgba(255,22,42,${0.95*intensity})`;
+  ctx.shadowBlur=22*intensity;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.closePath();
+  ctx.fillStyle='#ff1930';
   ctx.fill();
-  ctx.shadowBlur=6;
-  ctx.fillStyle='#ffd2d8';
+  ctx.shadowBlur=7;
+  ctx.fillStyle='#ffe6ea';
   ctx.fill();
   ctx.restore();
 }
 
-function drawUltronHead(t,talk,lookX,lookY){
+function renderHead(t,talk,yaw,pitch){
   ctx.save();
-  ctx.translate(lookX*7,lookY*5);
+  const hy=yaw*1.45;
+  const hp=pitch*1.15;
 
-  // Rear cranium & temple hydraulics
-  drawArmorPlate([[-66,-68],[-44,-118],[0,-130],[44,-118],[66,-68],[74,-12],[60,44],[36,80],[-36,80],[-60,44],[-74,-12]],-75,-130,75,85,{dark:true});
+  // 1. Rear spherical titanium cranium dome (eliminates flat hexagon look)
+  const c0=proj(0,-42,-8,hy,hp);
+  const rx=66*c0.s, ry=84*c0.s;
+  const dome=ctx.createRadialGradient(c0.x-rx*0.32,c0.y-ry*0.35,rx*0.08,c0.x,c0.y,ry*1.15);
+  dome.addColorStop(0,'#f7fbff');
+  dome.addColorStop(0.22,'#9aa6b5');
+  dome.addColorStop(0.52,'#343e4c');
+  dome.addColorStop(0.8,'#131820');
+  dome.addColorStop(1,'#4c5768');
+  ctx.beginPath();
+  ctx.ellipse(c0.x,c0.y,rx,ry,0,0,Math.PI*2);
+  ctx.fillStyle=dome;
+  ctx.fill();
+  ctx.strokeStyle='rgba(220,235,250,0.45)';
+  ctx.lineWidth=1.4;
+  ctx.stroke();
 
-  // Ear audio-actuator pods
+  // 2. Ear / Temple Rotary Actuators
   for(const s of [-1,1]){
-    drawArmorPlate([[s*64,-34],[s*80,-24],[s*82,16],[s*63,28]],s*62,-34,s*82,28,{});
-    drawArmorPlate([[s*68,-20],[s*76,-14],[s*77,8],[s*68,14]],s*68,-20,s*77,14,{dark:true});
-    drawGlowSlit([[s*71,-11],[s*75,-8],[s*75,3],[s*71,5]],0.85);
+    const ear=proj(s*64,-24,2,hy,hp);
+    const er=17*ear.s;
+    const eg=ctx.createRadialGradient(ear.x-s*4,ear.y-4,2,ear.x,ear.y,er);
+    eg.addColorStop(0,'#cfd9e6');eg.addColorStop(0.5,'#2f3846');eg.addColorStop(1,'#0b0e14');
+    ctx.beginPath();ctx.ellipse(ear.x,ear.y,er*0.65,er,0,0,Math.PI*2);ctx.fillStyle=eg;ctx.fill();
+    drawGlow3D([[s*66,-30,8],[s*69,-28,12],[s*69,-16,12],[s*66,-14,8]],hy,hp,0.85);
   }
 
-  // Sculpted Titanium Brow & Crown Helmet
-  drawArmorPlate([
-    [-58,-64],[-40,-112],[0,-125],[40,-112],[58,-64],
-    [66,-28],[46,-16],[22,-27],[0,-18],[-22,-27],[-46,-16],[-66,-28]
-  ],-65,-125,65,-15,{lw:1.6});
+  // 3. Sculpted Forehead Helmet & Menacing V-Brow Ridge
+  drawCurvedPatch([
+    [-56,-56,16],[-34,-108,8],[0,-118,18],[34,-108,8],[56,-56,16],
+    [60,-28,34],[36,-22,48],[0,-14,54],[-36,-22,48],[-60,-28,34]
+  ],hy,hp,{lw:1.5});
 
-  // Center forehead crest & specular ridge
-  drawArmorPlate([[-14,-122],[0,-127],[14,-122],[18,-62],[0,-22],[-18,-62]],-18,-127,18,-22,{lw:1.4});
-  ctx.strokeStyle='rgba(255,255,255,0.75)';
-  ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.moveTo(0,-123);ctx.lineTo(0,-25);ctx.stroke();
+  // Central Cranial Ridge (iconic Ultron crest)
+  drawCurvedPatch([
+    [-11,-116,14],[0,-120,24],[11,-116,14],
+    [14,-56,42],[0,-15,56],[-14,-56,42]
+  ],hy,hp,{lw:1.3});
 
-  // Brow overhanging shadow plates
+  // Deep Ocular Recess (shadowed socket under brow)
+  drawCurvedPatch([
+    [-54,-24,30],[-18,-22,46],[0,-13,52],[18,-22,46],[54,-24,30],
+    [48,6,34],[18,12,44],[-18,12,44],[-48,6,34]
+  ],hy,hp,{dark:true,sharp:true,rimColor:'rgba(255,35,55,0.4)'});
+
+  // 4. Fierce Glowing Red Eyes (angled predator slits)
+  const eyePulse=0.88+0.12*Math.sin(t*3.5);
   for(const s of [-1,1]){
-    drawArmorPlate([[s*16,-32],[s*54,-46],[s*66,-26],[s*48,-12],[s*18,-22]],s*15,-46,s*66,-12,{dark:true});
+    drawGlow3D([
+      [s*15,-12,48],[s*48,-20,35],[s*51,-12,33],[s*36,-3,41],[s*17,-4,48]
+    ],hy,hp,eyePulse);
   }
 
-  // Deep dark ocular cavity
-  drawArmorPlate([
-    [-54,-22],[-20,-24],[0,-15],[20,-24],[54,-22],
-    [48,10],[22,16],[-22,16],[-48,10]
-  ],-54,-24,54,16,{dark:true,rimColor:'rgba(255,45,60,0.35)'});
-
-  // Menacing Angled Ultron Eyes
-  const pulse=0.85+0.15*Math.sin(t*3.2);
+  // 5. High Angular Cheekbones & Swept Side-Plates
   for(const s of [-1,1]){
-    drawGlowSlit([
-      [s*15,-14],[s*50,-20],[s*53,-12],[s*38,-2],[s*17,-4]
-    ],pulse);
-    // Inner hot pupil flare
-    ctx.save();
-    ctx.fillStyle='#ffffff';
-    ctx.globalAlpha=0.8;
-    poly([[s*22,-12],[s*35,-14],[s*31,-8],[s*21,-8]]);
-    ctx.fill();
-    ctx.restore();
+    drawCurvedPatch([
+      [s*61,-24,26],[s*66,14,14],[s*48,54,22],[s*26,68,36],[s*24,24,44],[s*46,2,38]
+    ],hy,hp,{lw:1.4});
+    // Dark recessed cheek vent
+    drawCurvedPatch([
+      [s*44,14,32],[s*58,10,22],[s*52,36,24],[s*38,38,34]
+    ],hy,hp,{dark:true,sharp:true});
   }
 
-  // Sharp angular cheekbones
-  for(const s of [-1,1]){
-    drawArmorPlate([
-      [s*66,-24],[s*73,12],[s*56,52],[s*34,74],[s*28,36],[s*46,6]
-    ],s*28,-24,s*73,74,{lw:1.5});
-    // Cheek vent cut
-    drawArmorPlate([
-      [s*48,14],[s*63,10],[s*58,34],[s*44,36]
-    ],s*44,10,s*63,36,{dark:true});
+  // 6. Sharp Titanium Nasal Bridge
+  drawCurvedPatch([
+    [-9,-15,53],[9,-15,53],[13,18,52],[0,25,56],[-13,18,52]
+  ],hy,hp,{sharp:true,lw:1.4});
+
+  // 7. Articulated Lower Jaw & Glowing Furnace Mouth Grille
+  const jawDrop=talk*9;
+  drawCurvedPatch([
+    [-32,22+jawDrop,38],[32,22+jawDrop,38],
+    [36,56+jawDrop,32],[20,84+jawDrop,36],[0,90+jawDrop,40],[-20,84+jawDrop,36],[-36,56+jawDrop,32]
+  ],hy,hp,{lw:1.5});
+
+  // Dark mouth cavity + internal red furnace glow
+  drawCurvedPatch([
+    [-24,26+jawDrop,42],[24,26+jawDrop,42],
+    [25,54+jawDrop,38],[14,68+jawDrop,40],[-14,68+jawDrop,40],[-25,54+jawDrop,38]
+  ],hy,hp,{dark:true,sharp:true});
+
+  const mouthHeat=0.32+talk*0.68+0.1*Math.sin(t*4.5);
+  drawGlow3D([
+    [-20,31+jawDrop,43],[20,31+jawDrop,43],[18,58+jawDrop,41],[-18,58+jawDrop,41]
+  ],hy,hp,mouthHeat);
+
+  // Titanium mouth grille bars
+  for(const gx of [-14,-7,0,7,14]){
+    drawCurvedPatch([
+      [gx-2,27+jawDrop,45],[gx+2,27+jawDrop,45],
+      [gx+1.8,63+jawDrop,43],[gx-1.8,63+jawDrop,43]
+    ],hy,hp,{sharp:true,lw:0.8});
   }
 
-  // Nasal bridge plate
-  drawArmorPlate([[-11,-18],[11,-18],[15,18],[0,26],[-15,18]],-15,-18,15,26,{lw:1.5});
-
-  // Animated Lower Jaw & Iconic Ultron Mouth Grille
-  ctx.save();
-  ctx.translate(0,talk*7);
-  drawArmorPlate([
-    [-36,24],[36,24],[42,58],[24,88],[0,96],[-24,88],[-42,58]
-  ],-42,24,42,96,{lw:1.6});
-  // Dark mouth recess with red internal furnace glow
-  drawArmorPlate([
-    [-26,28],[26,28],[29,56],[16,74],[-16,74],[-29,56]
-  ],-29,28,29,74,{dark:true});
-
-  // Red internal mouth glow when speaking or breathing
-  const mouthGlow=0.35+talk*0.65+0.12*Math.sin(t*4);
-  drawGlowSlit([[-21,34],[21,34],[19,63],[-19,63]],mouthGlow);
-
-  // Vertical titanium teeth/grille bars over the glow
-  for(const x of [-15,-7.5,0,7.5,15]){
-    drawArmorPlate([[x-2.3,29],[x+2.3,29],[x+2,69],[x-2,69]],x-2.5,29,x+2.5,69,{lw:0.8});
-  }
-  // Chin armor cap
-  drawArmorPlate([[-22,68],[22,68],[16,90],[0,95],[-16,90]],-22,68,22,95,{lw:1.4});
-  ctx.restore();
+  // Chin armor guard
+  drawCurvedPatch([
+    [-20,64+jawDrop,41],[20,64+jawDrop,41],[14,84+jawDrop,39],[0,89+jawDrop,42],[-14,84+jawDrop,39]
+  ],hy,hp,{lw:1.3});
 
   ctx.restore();
 }
 
-function drawUltronBody(t,talk,breath,lookX,lookY){
-  // Mechanical Neck & Hydraulic Pistons
-  drawArmorPlate([[-38,72],[38,72],[48,142],[-48,142]],-48,72,48,142,{dark:true});
-  for(const s of [-1,1]){
-    drawArmorPlate([[s*16,74],[s*30,74],[s*38,138],[s*20,138]],s*16,74,s*38,138,{});
-    // Neck tendons
-    ctx.strokeStyle='#8f9aa8';ctx.lineWidth=2.5;
-    ctx.beginPath();ctx.moveTo(s*24,78);ctx.lineTo(s*30,136);ctx.stroke();
-  }
-  // Throat collar ring
-  drawArmorPlate([[-56,124],[-24,136],[0,142],[24,136],[56,124],[66,148],[0,162],[-66,148]],-66,124,66,162,{lw:1.6});
+function renderBody(t,talk,breath,yaw,pitch){
+  const ty=yaw*0.45;
+  const tp=pitch*0.35;
 
-  // Massive Layered Pauldrons (Shoulders)
+  // Hydraulic Neck Spine & Pistons
+  drawLimb([0,56,-6],[0,136,-4],32,42,ty,tp,true);
   for(const s of [-1,1]){
-    ctx.save();
-    ctx.translate(s*112,158+breath*2);
-    ctx.rotate(s*0.08);
-    // Outer upper shoulder armor
-    drawArmorPlate([
-      [s*-42,-28],[s*34,-34],[s*76,-4],[s*84,48],[s*46,72],[s*-28,54]
-    ],s*-42,-34,s*84,72,{lw:1.7});
-    // Secondary overlapping shoulder plate
-    drawArmorPlate([
-      [s*-22,-10],[s*44,-14],[s*68,26],[s*42,64],[s*-14,48]
-    ],s*-22,-14,s*68,64,{lw:1.4});
-    // Shoulder red energy vent
-    drawGlowSlit([[s*18,12],[s*44,8],[s*48,20],[s*22,24]],0.8);
-    ctx.restore();
+    drawLimb([s*20,64,6],[s*30,134,12],9,12,ty,tp,false);
+    drawLimb([s*28,74,-12],[s*38,136,-8],7,9,ty,tp,true);
   }
 
-  // Sculpted Torso Chassis
-  drawArmorPlate([
-    [-92,140],[92,140],[114,225],[86,348],[54,392],[-54,392],[-86,348],[-114,225]
-  ],-114,140,114,392,{dark:true,innerShadow:true});
+  // Upper Torso & Tapered V-Shape Chassis
+  drawLimb([0,138,0],[0,256,6],94,76,ty,tp,true);
+  drawLimb([0,254,6],[0,368,2],74,52,ty,tp,true);
 
-  // Broad Armored Pectoral Plates
+  // Armored Collar Ring
+  drawCurvedPatch([
+    [-58,118,12],[-24,132,34],[0,138,40],[24,132,34],[58,118,12],
+    [66,142,18],[0,158,46],[-66,142,18]
+  ],ty,tp,{lw:1.5});
+
+  // Massive Layered Shoulder Pauldrons (3D curved domes)
   for(const s of [-1,1]){
-    drawArmorPlate([
-      [s*12,148],[s*88,144],[s*108,214],[s*78,244],[s*16,232]
-    ],s*12,144,s*108,244,{lw:1.7});
-    // Upper pec bevel highlight
-    drawArmorPlate([
-      [s*22,156],[s*82,152],[s*94,192],[s*24,198]
-    ],s*22,152,s*94,198,{lw:1.2});
+    drawLimb([s*96,154+breath*2,-4],[s*132,208+breath*2,4],48,38,ty,tp,false);
+    drawCurvedPatch([
+      [s*74,128+breath*2,14],[s*126,134+breath*2,6],[s*162,178+breath*2,12],
+      [s*154,224+breath*2,24],[s*102,216+breath*2,34],[s*76,174+breath*2,32]
+    ],ty,tp,{lw:1.6});
+    drawGlow3D([
+      [s*118,168+breath*2,28],[s*142,164+breath*2,20],[s*145,176+breath*2,20],[s*121,180+breath*2,28]
+    ],ty,tp,0.8);
+  }
+
+  // Broad Sculpted Pectoral Armor Plates
+  for(const s of [-1,1]){
+    drawCurvedPatch([
+      [s*12,142,42],[s*88,138,24],[s*104,204,32],[s*74,234,44],[s*15,222,50]
+    ],ty,tp,{lw:1.6});
   }
 
   // Central Sternum & Glowing Arc-Core Slit
-  drawArmorPlate([[-22,148],[22,148],[28,256],[0,278],[-28,256]],-28,148,28,278,{dark:true});
-  const corePulse=0.8+0.2*Math.sin(t*2.6)+talk*0.25;
-  drawGlowSlit([[-9,176],[9,176],[13,242],[0,256],[-13,242]],corePulse);
-  // Core cage bars
-  drawArmorPlate([[-16,196],[16,196],[15,203],[-15,203]],-16,196,16,203,{});
-  drawArmorPlate([[-15,222],[15,222],[13,229],[-13,229]],-15,222,15,229,{});
+  drawCurvedPatch([
+    [-20,144,48],[20,144,48],[26,246,48],[0,268,52],[-26,246,48]
+  ],ty,tp,{dark:true,sharp:true});
 
-  // Segmented Rib / Abdominal Armor Plates
+  const corePulse=0.82+0.18*Math.sin(t*2.8)+talk*0.25;
+  drawGlow3D([
+    [-8,172,51],[8,172,51],[12,234,51],[0,248,54],[-12,234,51]
+  ],ty,tp,corePulse);
+
+  // Segmented Rib / Abdominal Muscle Armor
   for(let r=0;r<4;r++){
-    const y=254+r*30;
-    const w=78-r*7;
+    const y=244+r*28;
+    const w=72-r*6;
+    const z=46-r*2;
     for(const s of [-1,1]){
-      drawArmorPlate([
-        [s*10,y+4],[s*w,y-4],[s*(w-5),y+20],[s*12,y+25]
-      ],s*10,y-4,s*w,y+25,{lw:1.3});
+      drawCurvedPatch([
+        [s*10,y+3,z+4],[s*w,y-4,z-12],[s*(w-5),y+18,z-12],[s*12,y+23,z+4]
+      ],ty,tp,{lw:1.3});
     }
   }
 
-  // Upper Arms, Elbow Servos, Forearms & Articulated Claws
+  // 3D Cylindrical Arms, Elbow Joints, Forearm Gauntlets & Claws
   for(const s of [-1,1]){
-    ctx.save();
-    ctx.translate(s*132,216+breath*2);
-    ctx.rotate(s*0.06);
-    // Bicep dark inner frame + outer armor
-    drawArmorPlate([[s*-22,0],[s*26,0],[s*32,96],[s*-20,96]],s*-22,0,s*32,96,{dark:true});
-    drawArmorPlate([[s*-12,8],[s*28,4],[s*34,84],[s*-8,88]],s*-12,4,s*34,88,{lw:1.4});
-    // Elbow joint ring
-    drawArmorPlate([[s*-24,92],[s*30,92],[s*26,124],[s*-22,124]],s*-24,92,s*30,124,{dark:true});
-    // Heavy Forearm Gauntlet
-    drawArmorPlate([[s*-24,122],[s*32,120],[s*38,218],[s*16,244],[s*-20,236]],s*-24,120,s*38,244,{lw:1.6});
-    drawGlowSlit([[s*16,144],[s*23,144],[s*25,194],[s*18,194]],0.75);
+    const sh=[s*132,206+breath*2,4];
+    const el=[s*152,306+breath*2,14];
+    const wr=[s*162,418+breath*2,32];
+    drawLimb(sh,el,26,21,ty,tp,true);
+    drawLimb([s*134,218+breath*2,12],[s*148,292+breath*2,20],22,18,ty,tp,false);
+    drawLimb(el,wr,23,17,ty,tp,false);
+    drawGlow3D([
+      [s*156,332+breath*2,34],[s*161,332+breath*2,32],[s*165,382+breath*2,39],[s*160,382+breath*2,41]
+    ],ty,tp,0.75);
     // Mechanical Hand & Claws
-    drawArmorPlate([[s*-16,238],[s*22,240],[s*24,268],[s*-14,266]],s*-16,238,s*24,268,{dark:true});
-    for(let f=0;f<3;f++){
-      const fx=-10+f*12;
-      drawArmorPlate([[s*fx,266],[s*(fx+8),266],[s*(fx+5),296],[s*(fx-2),294]],s*fx,266,s*(fx+8),296,{});
+    drawLimb(wr,[s*164,446+breath*2,38],16,13,ty,tp,true);
+    for(let f=-1;f<=1;f++){
+      drawLimb([s*(162+f*6),446+breath*2,38+f*4],[s*(160+f*7),476+breath*2,42+f*4],4.5,2.5,ty,tp,false);
     }
-    ctx.restore();
   }
 
-  // Pelvis & Hip Armor
-  drawArmorPlate([[-62,382],[62,382],[76,436],[44,468],[-44,468],[-76,436]],-76,382,76,468,{lw:1.6});
-  drawArmorPlate([[-22,386],[22,386],[26,456],[0,470],[-26,456]],-26,386,26,470,{dark:true});
+  // Pelvis & Heavy Armored Legs
+  drawLimb([0,366,2],[0,428,6],54,48,ty,tp,false);
+  drawCurvedPatch([[-20,372,42],[20,372,42],[24,438,44],[0,452,48],[-24,438,44]],ty,tp,{dark:true,sharp:true});
 
-  // Heavy Armored Thighs, Knees & Greaves
   for(const s of [-1,1]){
-    // Thigh
-    drawArmorPlate([[s*22,436],[s*76,428],[s*82,534],[s*26,542]],s*22,428,s*82,542,{lw:1.6});
-    drawArmorPlate([[s*32,448],[s*68,444],[s*72,518],[s*36,524]],s*32,444,s*72,524,{dark:true});
-    // Knee guard
-    drawArmorPlate([[s*24,528],[s*80,524],[s*76,568],[s*28,572]],s*24,524,s*80,572,{lw:1.6});
-    // Shin / Greave
-    drawArmorPlate([[s*26,566],[s*78,562],[s*86,668],[s*22,672]],s*22,562,s*86,672,{lw:1.6});
-    drawGlowSlit([[s*52,584],[s*58,584],[s*60,644],[s*54,644]],0.7);
+    const hip=[s*46,418,4];
+    const knee=[s*54,536,16];
+    const ankle=[s*58,664,6];
+    drawLimb(hip,knee,30,23,ty,tp,false);
+    drawLimb(knee,ankle,25,18,ty,tp,false);
+    drawGlow3D([[s*52,562,38],[s*57,562,38],[s*59,624,32],[s*54,624,32]],ty,tp,0.7);
     // Armored Foot
-    drawArmorPlate([[s*18,668],[s*88,666],[s*104,698],[s*14,698]],s*14,666,s*104,698,{lw:1.6});
+    drawCurvedPatch([
+      [s*34,658,10],[s*82,658,10],[s*94,692,42],[s*26,692,42]
+    ],ty,tp,{lw:1.5});
   }
 }
 
@@ -376,8 +445,8 @@ function render(now){
   const t=now*0.001;
   state.zoom+=(state.targetZoom-state.zoom)*0.12;
   state.sitBlend+=((state.sitMode?1:0)-state.sitBlend)*0.1;
-  state.smoothX+=(state.pointerX-state.smoothX)*0.08;
-  state.smoothY+=(state.pointerY-state.smoothY)*0.08;
+  state.yaw+=(state.px*0.36-state.yaw)*0.08;
+  state.pitch+=(state.py*0.24-state.pitch)*0.08;
 
   const w=canvas.clientWidth;
   const h=canvas.clientHeight;
@@ -386,30 +455,28 @@ function render(now){
   const talk=state.speaking?(0.35+0.65*Math.abs(Math.sin(t*14))):0;
   const breath=Math.sin(t*2.1);
 
-  // Ambient red aura behind Ultron
-  const aura=ctx.createRadialGradient(w*0.5,h*0.44,15,w*0.5,h*0.46,Math.min(w,h)*0.44);
-  aura.addColorStop(0,'rgba(255,28,46,0.28)');
-  aura.addColorStop(0.55,'rgba(170,12,26,0.12)');
+  // Backlit crimson rim aura
+  const aura=ctx.createRadialGradient(w*0.5,h*0.44,12,w*0.5,h*0.46,Math.min(w,h)*0.45);
+  aura.addColorStop(0,'rgba(255,24,44,0.32)');
+  aura.addColorStop(0.55,'rgba(160,10,24,0.14)');
   aura.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=aura;
   ctx.fillRect(0,0,w,h);
 
   ctx.save();
-  // Stand view vs Sit Mode close-up bust framing
-  const baseScale=Math.min(w/430,h/840)*state.zoom;
-  const standScale=baseScale;
-  const bustScale=Math.min(w/290,h/430)*state.zoom;
+  const standScale=Math.min(w/420,h/840)*state.zoom;
+  const bustScale=Math.min(w/260,h/400)*state.zoom;
   const scale=standScale+(bustScale-standScale)*state.sitBlend;
 
-  const standY=h*0.21+breath*4;
-  const bustY=h*0.44+breath*3;
+  const standY=h*0.20+breath*4;
+  const bustY=h*0.45+breath*3;
   const cy=standY+(bustY-standY)*state.sitBlend;
 
   ctx.translate(w*0.5,cy);
   ctx.scale(scale,scale);
 
-  drawUltronBody(t,talk,breath,state.smoothX,state.smoothY);
-  drawUltronHead(t,talk,state.smoothX,state.smoothY);
+  renderBody(t,talk,breath,state.yaw,state.pitch);
+  renderHead(t,talk,state.yaw,state.pitch);
 
   ctx.restore();
   requestAnimationFrame(render);
